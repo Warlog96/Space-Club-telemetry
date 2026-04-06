@@ -40,19 +40,10 @@ const IgnitionPanel = () => {
     const handleIgnitionToggle = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('adminToken');
-            if (!token) {
-                console.error('No authentication token found');
-                alert('Please login first');
-                setLoading(false);
-                return;
-            }
-
             const response = await fetch('http://localhost:3001/api/ignition/trigger', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ ignite: !ignitionOn })
             });
