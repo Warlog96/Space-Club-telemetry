@@ -1,0 +1,175 @@
+@import url('https://fonts.googleapis.com/css2?family=Tahoma:wght@400;700&display=swap');
+
+:root {
+  --bg-color: #c0c0c0;
+  --panel-bg: #c0c0c0;
+  --panel-2: #dfdfdf;
+  --text-main: #000000;
+  --highlight: #000080;
+  /* Classic active title bar */
+  --highlight-text: #ffffff;
+  --secondary: #808080;
+
+  --border-light: #ffffff;
+  --border-light-inner: #dfdfdf;
+  --border-dark: #808080;
+  --border-darkest: #000000;
+
+  --accent-warm: #d97706;
+  --accent-purple: #7c3aed;
+  --danger: #dc2626;
+  --success: #16a34a;
+
+  --font-main: 'Tahoma', 'MS Sans Serif', Arial, sans-serif;
+  --font-display: 'Tahoma', 'MS Sans Serif', Arial, sans-serif;
+  --font-mono: 'Consolas', 'Courier New', monospace;
+
+  --border-color: #808080;
+  --panel-header-bg: #000080;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  font-size: 11px;
+  /* Classic smaller text */
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ── Custom Scrollbar (Classic Style) ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+  background: #dfdfdf;
+}
+
+::-webkit-scrollbar-track {
+  background: #dfdfdf;
+  border-left: 1px solid var(--border-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-top: 1px solid var(--border-light);
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-darkest);
+  border-bottom: 1px solid var(--border-darkest);
+}
+
+::-webkit-scrollbar-button {
+  background: #c0c0c0;
+  border-top: 1px solid var(--border-light);
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-darkest);
+  border-bottom: 1px solid var(--border-darkest);
+}
+
+/* ── Utility classes ─────────────────────────────────────────────────────── */
+.glass-panel,
+.light-card,
+.classic-outset {
+  background: var(--panel-bg);
+  border-top: 2px solid var(--border-light);
+  border-left: 2px solid var(--border-light);
+  border-right: 2px solid var(--border-darkest);
+  border-bottom: 2px solid var(--border-darkest);
+  box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+  border-radius: 0;
+  /* No rounded corners in Windows 95 */
+  color: var(--text-main);
+}
+
+.classic-inset,
+.data-display {
+  background: #000000;
+  border-top: 2px solid var(--border-darkest);
+  border-left: 2px solid var(--border-darkest);
+  border-right: 2px solid var(--border-light);
+  border-bottom: 2px solid var(--border-light);
+  box-shadow: inset -1px -1px 0 var(--border-light-inner), inset 1px 1px 0 var(--border-dark);
+  color: #00ff00;
+  /* classic green data */
+}
+
+/* Reusing these for headers */
+.panel-title-bar {
+  background: linear-gradient(90deg, #000080, #1084d0);
+  /* classic Win98 gradient */
+  color: #ffffff;
+  padding: 2px 4px;
+  font-weight: bold;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
+
+.glow-text {
+  font-weight: bold;
+}
+
+.orbitron,
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ── Base input / button ─────────────────────────────────────────────────── */
+input {
+  background: #ffffff;
+  border-top: 2px solid var(--border-darkest);
+  border-left: 2px solid var(--border-darkest);
+  border-right: 2px solid var(--border-light);
+  border-bottom: 2px solid var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--border-dark), inset -1px -1px 0 var(--border-light-inner);
+  color: #000000;
+  padding: 2px 4px;
+  border-radius: 0;
+  font-family: var(--font-main);
+  font-size: 11px;
+  outline: none;
+}
+
+button {
+  background: #c0c0c0;
+  color: #000000;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 11px;
+  border-top: 2px solid var(--border-light);
+  border-left: 2px solid var(--border-light);
+  border-right: 2px solid var(--border-darkest);
+  border-bottom: 2px solid var(--border-darkest);
+  box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+  border-radius: 0;
+  transition: none;
+}
+
+button:active,
+button.active {
+  border-top: 2px solid var(--border-darkest);
+  border-left: 2px solid var(--border-darkest);
+  border-right: 2px solid var(--border-light);
+  border-bottom: 2px solid var(--border-light);
+  box-shadow: inset 1px 1px 0 var(--border-dark);
+  padding: 5px 11px 3px 13px;
+  /* shift text when clicked */
+}
+
+button.primary {
+  font-weight: bold;
+}
+
+/* ── HUD border glow helper ──────────────────────────────────────────────── */
+.hud-border {
+  border: 1px solid var(--border-dark);
+}

@@ -1,0 +1,225 @@
+.menu-toggle-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.menu-toggle-btn:hover {
+    background: #eef0f3;
+    border-color: #c1c1c1;
+}
+
+.menu-toggle-btn.open {
+    background: #e0e4e8;
+    border-color: #999;
+}
+
+.menu-icon {
+    font-size: 1rem;
+    line-height: 1;
+    color: #005fb8;
+}
+
+.menu-label {
+    letter-spacing: 0.5px;
+}
+
+/* Menu Overlay */
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Menu Panel */
+.menu-panel {
+    position: fixed;
+    top: 0;
+    left: -320px;
+    width: 300px;
+    height: 100vh;
+    background: #f8f9fa;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 1002;
+    transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.menu-panel.open {
+    left: 0;
+}
+
+/* Menu Header */
+.menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.2rem 1.5rem;
+    background: #005fb8;
+    color: white;
+}
+
+.menu-header h3 {
+    margin: 0;
+    font-family: var(--font-main);
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.menu-close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0.2rem 0.6rem;
+    transition: all 0.2s ease;
+}
+
+.menu-close-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+/* Menu Content */
+.menu-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+/* Menu Section */
+.menu-section {
+    margin-bottom: 0.5rem;
+}
+
+.menu-section-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.6rem 0.8rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    color: var(--text-main);
+    font-family: var(--font-main);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.menu-section-btn:hover {
+    background: #eef0f3;
+}
+
+.menu-section-btn.active {
+    background: #e0e4e8;
+    color: #005fb8;
+    font-weight: 600;
+}
+
+.menu-section-btn.home-btn {
+    background: #e6f0fa;
+    color: #005fb8;
+    border: 1px solid #b3d4f5;
+    font-weight: 600;
+}
+
+.menu-section-btn.home-btn:hover {
+    background: #d0e4f7;
+}
+
+.section-icon {
+    font-size: 1.1rem;
+}
+
+.section-title {
+    flex: 1;
+    text-align: left;
+}
+
+.section-arrow {
+    font-size: 0.6rem;
+    color: #666;
+}
+
+/* Menu Items */
+.menu-items {
+    margin-top: 0.2rem;
+    margin-left: 1.2rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #d1d5db;
+}
+
+.menu-item {
+    width: 100%;
+    display: block;
+    padding: 0.4rem 0.8rem;
+    margin-bottom: 0.1rem;
+    background: transparent;
+    border: none;
+    border-radius: 2px;
+    color: #4b5563;
+    font-family: var(--font-main);
+    font-size: 0.8rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.menu-item:hover {
+    background: #eef0f3;
+    color: #000;
+}
+
+/* Scrollbar for menu content */
+.menu-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.menu-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.menu-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.menu-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

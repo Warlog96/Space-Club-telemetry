@@ -1,0 +1,431 @@
+.ignition-panel {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(102, 252, 241, 0.2);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+}
+
+.real-time-clock {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--highlight);
+    background: rgba(102, 252, 241, 0.1);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    border: 1px solid var(--highlight);
+}
+
+/* Status Section */
+.status-section {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.status-safe {
+    background: rgba(102, 252, 241, 0.1);
+    border-color: var(--highlight);
+}
+
+.status-armed {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: #ffc107;
+}
+
+.status-ignited {
+    background: rgba(207, 102, 121, 0.1);
+    border-color: var(--danger);
+}
+
+.status-light {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    animation: pulse-light 2s infinite;
+}
+
+.status-safe .status-light {
+    background: var(--highlight);
+    box-shadow: 0 0 10px var(--highlight);
+}
+
+.status-armed .status-light {
+    background: #ffc107;
+    box-shadow: 0 0 10px #ffc107;
+}
+
+.status-ignited .status-light {
+    background: var(--danger);
+    box-shadow: 0 0 10px var(--danger);
+}
+
+@keyframes pulse-light {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1.1);
+    }
+}
+
+.status-text {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 3px;
+}
+
+.status-safe .status-text {
+    color: var(--highlight);
+}
+
+.status-armed .status-text {
+    color: #ffc107;
+}
+
+.status-ignited .status-text {
+    color: var(--danger);
+}
+
+/* Controls Section */
+.controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.control-group label {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    color: var(--highlight);
+    letter-spacing: 1px;
+}
+
+/* Toggle Switch */
+.toggle-container {
+    display: flex;
+    justify-content: center;
+}
+
+.toggle-button {
+    position: relative;
+    width: 200px;
+    height: 60px;
+    border-radius: 30px;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    overflow: hidden;
+}
+
+.toggle-button.disabled {
+    background: rgba(102, 252, 241, 0.1);
+    border-color: var(--highlight);
+    color: var(--highlight);
+}
+
+.toggle-button.enabled {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: #ffc107;
+    color: #ffc107;
+}
+
+.toggle-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-button span {
+    position: relative;
+    z-index: 2;
+}
+
+.toggle-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+.toggle-button.disabled .toggle-slider {
+    background: var(--highlight);
+    box-shadow: 0 0 10px var(--highlight);
+}
+
+.toggle-button.enabled .toggle-slider {
+    background: #ffc107;
+    box-shadow: 0 0 10px #ffc107;
+    transform: translateX(140px);
+}
+
+/* Action Buttons */
+.countdown-controls {
+    display: flex;
+    justify-content: center;
+}
+
+.action-button {
+    padding: 1rem 2rem;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+    border-radius: 6px;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.start-button {
+    background: rgba(102, 252, 241, 0.1);
+    border-color: var(--highlight);
+    color: var(--highlight);
+}
+
+.start-button:hover {
+    background: rgba(102, 252, 241, 0.2);
+    box-shadow: 0 0 15px var(--highlight);
+}
+
+.abort-button {
+    background: rgba(207, 102, 121, 0.2);
+    border-color: var(--danger);
+    color: var(--danger);
+    animation: pulse-danger 1s infinite;
+}
+
+@keyframes pulse-danger {
+
+    0%,
+    100% {
+        box-shadow: 0 0 10px var(--danger);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--danger);
+    }
+}
+
+.reset-button {
+    background: rgba(69, 162, 158, 0.1);
+    border-color: var(--secondary);
+    color: var(--secondary);
+}
+
+.reset-button:hover {
+    background: rgba(69, 162, 158, 0.2);
+}
+
+/* Clocks Section */
+.clocks-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.clock-display {
+    background: rgba(31, 40, 51, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.clock-label {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: #888;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+}
+
+.clock-value {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: bold;
+    color: #666;
+    letter-spacing: 3px;
+}
+
+.clock-value.counting {
+    color: #ffc107;
+    animation: pulse-clock 1s infinite;
+}
+
+.clock-value.active {
+    color: var(--success);
+}
+
+@keyframes pulse-clock {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Activity Log */
+.activity-log-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.log-header h4 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--highlight);
+    letter-spacing: 1px;
+}
+
+.download-csv-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    font-family: var(--font-display);
+    background: rgba(102, 252, 241, 0.1);
+    border: 1px solid var(--highlight);
+    color: var(--highlight);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.download-csv-button:hover:not(:disabled) {
+    background: rgba(102, 252, 241, 0.2);
+}
+
+.download-csv-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.log-entries {
+    flex: 1;
+    background: rgba(11, 12, 16, 0.6);
+    border: 1px solid rgba(102, 252, 241, 0.2);
+    border-radius: 6px;
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: 300px;
+}
+
+.log-entry {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem;
+    margin-bottom: 0.3rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    border-left: 3px solid;
+}
+
+.log-entry.empty {
+    border-left: none;
+    color: #666;
+    justify-content: center;
+}
+
+.log-info {
+    background: rgba(102, 252, 241, 0.05);
+    border-left-color: var(--highlight);
+}
+
+.log-warning {
+    background: rgba(255, 193, 7, 0.05);
+    border-left-color: #ffc107;
+}
+
+.log-error {
+    background: rgba(207, 102, 121, 0.05);
+    border-left-color: var(--danger);
+}
+
+.log-success {
+    background: rgba(3, 218, 198, 0.05);
+    border-left-color: var(--success);
+}
+
+.log-time {
+    font-family: var(--font-display);
+    color: #888;
+    min-width: 80px;
+}
+
+.log-message {
+    flex: 1;
+    color: var(--text-main);
+}
+
+/* Scrollbar for log */
+.log-entries::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log-entries::-webkit-scrollbar-track {
+    background: rgba(31, 40, 51, 0.3);
+}
+
+.log-entries::-webkit-scrollbar-thumb {
+    background: var(--secondary);
+    border-radius: 3px;
+}

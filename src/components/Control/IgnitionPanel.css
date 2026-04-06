@@ -1,0 +1,181 @@
+/* Ignition Panel Styles */
+.ignition-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px;
+    height: 100%;
+    overflow-y: auto;
+    background: var(--bg-color);
+}
+
+.real-time-clock {
+    font-size: 11px;
+    color: #000000;
+    font-family: var(--font-mono);
+}
+
+/* Status Section */
+.status-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #ffffff;
+}
+
+.status-light {
+    width: 12px;
+    height: 12px;
+    background: #808080;
+    border-top: 1px solid var(--border-dark);
+    border-left: 1px solid var(--border-dark);
+    border-right: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.status-indicator.status-safe .status-light {
+    background: #00ff00;
+}
+
+.status-indicator.status-ignited .status-light {
+    background: #ff0000;
+}
+
+.status-text {
+    font-weight: bold;
+    font-size: 11px;
+    color: #000000;
+}
+
+/* Ignition Button Section */
+.ignition-button-section {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0;
+}
+
+.ignition-button {
+    width: 100%;
+    max-width: 280px;
+    padding: 16px;
+    border-top: 2px solid var(--border-light);
+    border-left: 2px solid var(--border-light);
+    border-right: 2px solid var(--border-darkest);
+    border-bottom: 2px solid var(--border-darkest);
+    background: var(--bg-color);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+}
+
+.ignition-button:active:not(:disabled) {
+    border-top: 2px solid var(--border-darkest);
+    border-left: 2px solid var(--border-darkest);
+    border-right: 2px solid var(--border-light);
+    border-bottom: 2px solid var(--border-light);
+    box-shadow: inset 1px 1px 0 var(--bg-color);
+}
+
+.ignition-button.off {
+    color: #000000;
+}
+
+.ignition-button.off:hover:not(:disabled) {
+    color: #0000ff;
+}
+
+.ignition-button.on {
+    color: #ff0000;
+}
+
+.ignition-button.on:hover:not(:disabled) {
+    color: #800000;
+}
+
+.ignition-button:disabled {
+    color: #808080;
+    cursor: wait;
+}
+
+.button-icon {
+    font-size: 24px;
+}
+
+.button-text {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.button-subtext {
+    font-size: 11px;
+    opacity: 0.8;
+}
+
+/* Activity Log Section */
+.activity-log-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.log-entries {
+    flex: 1;
+    overflow-y: auto;
+    background: #ffffff;
+    padding: 4px;
+    max-height: 250px;
+}
+
+.log-entry {
+    padding: 2px 0;
+    margin-bottom: 2px;
+    border-bottom: 1px solid var(--border-light-inner);
+    font-size: 11px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.log-entry.empty {
+    border-bottom: none;
+    justify-content: center;
+    color: #808080;
+    background: transparent;
+}
+
+.log-time {
+    color: #000080;
+    font-family: var(--font-mono);
+    min-width: 70px;
+}
+
+.log-message {
+    flex: 1;
+    color: #000000;
+}
+
+.log-user {
+    color: #800000;
+    font-weight: bold;
+    min-width: 80px;
+    text-align: right;
+}

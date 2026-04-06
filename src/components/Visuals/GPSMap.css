@@ -1,0 +1,156 @@
+.gps-map-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: var(--bg-color);
+}
+
+/* Map Controls Overlay */
+.map-controls {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.control-btn {
+    padding: 2px 4px;
+    font-family: var(--font-main);
+    font-size: 11px;
+    background: var(--bg-color);
+    border-top: 2px solid var(--border-light);
+    border-left: 2px solid var(--border-light);
+    border-right: 2px solid var(--border-darkest);
+    border-bottom: 2px solid var(--border-darkest);
+    color: #000000;
+    cursor: pointer;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+}
+
+.control-btn:active,
+.control-btn.active {
+    border-top: 2px solid var(--border-darkest);
+    border-left: 2px solid var(--border-darkest);
+    border-right: 2px solid var(--border-light);
+    border-bottom: 2px solid var(--border-light);
+    box-shadow: inset 1px 1px 0 var(--bg-color);
+}
+
+.rocket-share {
+    color: #ff0000;
+    font-weight: bold;
+}
+
+.location-error {
+    padding: 2px 4px;
+    font-family: var(--font-main);
+    font-size: 11px;
+    background: var(--bg-color);
+    border-top: 2px solid var(--border-light);
+    border-left: 2px solid var(--border-light);
+    border-right: 2px solid var(--border-darkest);
+    border-bottom: 2px solid var(--border-darkest);
+    color: #ff0000;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+}
+
+/* Stats Overlay */
+.map-stats {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    z-index: 1000;
+    display: flex;
+    gap: 4px;
+}
+
+.stat-card {
+    padding: 2px 4px;
+    background: var(--bg-color);
+    border-top: 2px solid var(--border-light);
+    border-left: 2px solid var(--border-light);
+    border-right: 2px solid var(--border-darkest);
+    border-bottom: 2px solid var(--border-darkest);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 60px;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner);
+}
+
+.stat-label {
+    font-family: var(--font-main);
+    font-size: 9px;
+    color: #000000;
+}
+
+.stat-value {
+    font-family: var(--font-main);
+    font-size: 11px;
+    font-weight: bold;
+    color: #000080;
+}
+
+/* Leaflet popup customization */
+.leaflet-popup-content-wrapper {
+    background: var(--bg-color) !important;
+    color: #000000 !important;
+    border-top: 2px solid var(--border-light) !important;
+    border-left: 2px solid var(--border-light) !important;
+    border-right: 2px solid var(--border-darkest) !important;
+    border-bottom: 2px solid var(--border-darkest) !important;
+    border-radius: 0 !important;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner) !important;
+}
+
+.leaflet-popup-content {
+    font-family: var(--font-main) !important;
+    font-size: 11px !important;
+}
+
+.leaflet-popup-content strong {
+    color: #000080 !important;
+}
+
+.leaflet-popup-tip {
+    display: none !important;
+}
+
+/* Leaflet control customization */
+.leaflet-control-zoom {
+    border: none !important;
+}
+
+.leaflet-control-zoom a {
+    background: var(--bg-color) !important;
+    color: #000000 !important;
+    border-top: 2px solid var(--border-light) !important;
+    border-left: 2px solid var(--border-light) !important;
+    border-right: 2px solid var(--border-darkest) !important;
+    border-bottom: 2px solid var(--border-darkest) !important;
+    border-radius: 0 !important;
+    box-shadow: inset -1px -1px 0 var(--border-dark), inset 1px 1px 0 var(--border-light-inner) !important;
+}
+
+.leaflet-control-zoom a:active {
+    border-top: 2px solid var(--border-darkest) !important;
+    border-left: 2px solid var(--border-darkest) !important;
+    border-right: 2px solid var(--border-light) !important;
+    border-bottom: 2px solid var(--border-light) !important;
+    box-shadow: inset 1px 1px 0 var(--bg-color) !important;
+}
+
+.leaflet-control-attribution {
+    background: var(--bg-color) !important;
+    color: #000000 !important;
+    font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+    color: #0000ff !important;
+}
