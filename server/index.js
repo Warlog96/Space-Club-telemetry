@@ -3,12 +3,12 @@ const WebSocket = require('ws');
 const admin = require('firebase-admin');
 const express = require('express');
 const cors = require('cors');
-const { verifyLogin, verifyToken } = require('./auth');
+// Auth removed — no login required
 const serviceAccount = require('./serviceAccountKey.json');
 const FirebaseManager = require('./firebase-manager');
 
 // Configuration - Use environment variables with fallbacks
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://10.43.149.185:1883';
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://localhost:1883';
 const MQTT_TOPIC = process.env.MQTT_TOPIC || 'rocket/telemetry';
 const WS_PORT = process.env.WS_PORT || process.env.PORT || 3000;
 const HTTP_PORT = process.env.HTTP_PORT || (process.env.PORT ? parseInt(process.env.PORT) + 1 : 3001);
@@ -156,49 +156,7 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Login endpoint
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        if (!username || !password) {
-            return res.status(400).json({ error: 'Username and password required' });
-        }
-
-        const result = await verifyLogin(username, password);
-
-        if (result.success) {
-            res.json({
-                success: true,
-                token: result.token,
-                username: result.username
-            });
-        } else {
-            res.status(401).json({ error: result.message });
-        }
-    } catch (error) {
-        console.error('[Auth] Login error:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-});
-
-// Verify token endpoint
-app.get('/api/auth/verify', (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ valid: false, error: 'No token provided' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (verification.valid) {
-        res.json({ valid: true, user: verification.data });
-    } else {
-        res.status(401).json({ valid: false, error: verification.message });
-    }
-});
+// Auth endpoints removed — no login required
 
 // Ignition status endpoint (public)
 app.get('/api/ignition/status', (req, res) => {
@@ -213,21 +171,8 @@ app.get('/api/ignition/status', (req, res) => {
 
 // Trigger ignition endpoint (admin only)
 app.post('/api/ignition/trigger', (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (!verification.valid) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-
     const { ignite } = req.body;
-    const username = verification.data.username;
+    const username = 'admin';
 
     if (ignite && !ignitionState.isIgnited) {
         // Turn ON ignition
@@ -351,19 +296,6 @@ app.get('/api/firebase/session/:sessionId', async (req, res) => {
 
 // Delete specific session (admin only)
 app.delete('/api/firebase/session/:sessionId', async (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (!verification.valid) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-
     if (!firebaseManager) {
         return res.status(503).json({ error: 'Firebase not initialized' });
     }
@@ -374,7 +306,7 @@ app.delete('/api/firebase/session/:sessionId', async (req, res) => {
         res.json({
             success: true,
             message: `Session ${sessionId} deleted`,
-            deletedBy: verification.data.username
+            deletedBy: 'admin'
         });
     } catch (error) {
         console.error('[API] Error deleting session:', error);
@@ -384,19 +316,6 @@ app.delete('/api/firebase/session/:sessionId', async (req, res) => {
 
 // Clear all Firebase data (admin only, requires confirmation)
 app.delete('/api/firebase/all', async (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (!verification.valid) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-
     // Require confirmation token in request body
     const { confirmToken } = req.body;
     if (confirmToken !== 'DELETE_ALL_DATA') {
@@ -415,7 +334,7 @@ app.delete('/api/firebase/all', async (req, res) => {
         res.json({
             success: true,
             message: 'All Firebase data cleared',
-            deletedBy: verification.data.username,
+            deletedBy: 'admin',
             timestamp: new Date().toISOString()
         });
     } catch (error) {
@@ -426,19 +345,6 @@ app.delete('/api/firebase/all', async (req, res) => {
 
 // Cleanup mock/test data (admin only)
 app.post('/api/firebase/cleanup-mock', async (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (!verification.valid) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-
     if (!firebaseManager) {
         return res.status(503).json({ error: 'Firebase not initialized' });
     }
@@ -450,7 +356,7 @@ app.post('/api/firebase/cleanup-mock', async (req, res) => {
             success: true,
             message: `Cleaned up ${deletedSessions.length} sessions`,
             deletedSessions,
-            cleanedBy: verification.data.username
+            cleanedBy: 'admin'
         });
     } catch (error) {
         console.error('[API] Error cleaning up mock data:', error);
@@ -460,19 +366,6 @@ app.post('/api/firebase/cleanup-mock', async (req, res) => {
 
 // Delete legacy missions data (admin only)
 app.delete('/api/firebase/legacy-missions', async (req, res) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Authentication required' });
-    }
-
-    const token = authHeader.substring(7);
-    const verification = verifyToken(token);
-
-    if (!verification.valid) {
-        return res.status(401).json({ error: 'Invalid token' });
-    }
-
     if (!firebaseManager) {
         return res.status(503).json({ error: 'Firebase not initialized' });
     }
@@ -482,7 +375,7 @@ app.delete('/api/firebase/legacy-missions', async (req, res) => {
         res.json({
             success: true,
             message: 'Legacy missions data deleted',
-            deletedBy: verification.data.username
+            deletedBy: 'admin'
         });
     } catch (error) {
         console.error('[API] Error deleting legacy missions:', error);

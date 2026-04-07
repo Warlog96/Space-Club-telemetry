@@ -1,208 +1,136 @@
 #include <SPI.h>
 #include <RadioLib.h>
-#include <WiFi.h>
-#include <PubSubClient.h>
 
 #define LED 2
 
-// ===== WIFI =====
-// Replace with your current WiFi Network details
-const char* ssid = "Avaneesh";
-const char* password = "123456789";
-
-// ===== MQTT =====
-// Ensure this is the correct IPv4 address of your PC running Mosquitto (check using 'ipconfig')
-const char* mqtt_server = "10.43.149.185"; 
-const int   mqtt_port = 1883;
-const char* mqtt_topic = "rocket/telemetry";
-
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
-
-// ===== PACKET STRUCT =====
-#pragma pack(push, 1)
-struct TelemetryPacket {
-  uint16_t packetCount;
-
-  int32_t lat;
-  int32_t lng;
-  int16_t gpsAlt;
-
-  int16_t ax, ay, az;
-  int16_t gx, gy, gz;
-
-  int16_t temperature;
-  uint16_t pressure;
-  int16_t bmpAlt;
-
-  int16_t thermoTemp;
-  int16_t strain;
-};
-#pragma pack(pop)
-
-TelemetryPacket rxPacket;
-
-// SX1262 setup
+// ===================== LORA =====================
 SX1262 radio = new Module(5, 26, 14, 27);
-
-void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) return;
-  
-  Serial.print("Connecting to WiFi: ");
-  Serial.println(ssid);
-  WiFi.begin(ssid, password);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi connected.");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-}
-
-void connectMQTT() {
-  if (mqttClient.connected()) return;
-  
-  while (!mqttClient.connected()) {
-    Serial.print("Connecting to MQTT... ");
-    // Generate a random client ID to prevent connection drops in case of duplication
-    String clientId = "ESP32_GroundStation_" + String(random(0xffff), HEX);
-    
-    if (mqttClient.connect(clientId.c_str())) {
-      Serial.println("connected to Mosquitto broker!");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-      Serial.println(" -> retrying in 2 seconds");
-      delay(2000);
-    }
-  }
-}
 
 void setup() {
   pinMode(LED, OUTPUT);
+  digitalWrite(LED, LOW);
+
   Serial.begin(115200);
+  delay(500);
 
-  SPI.begin(18, 19, 23);
+  SPI.begin(18, 19, 23);   // SCK, MISO, MOSI
 
-  Serial.print("Initializing Radio... ");
+  Serial.println("Booting RX Ground Station (Serial USB Mode)...");
+
   int state = radio.begin();
-  if (state == RADIOLIB_ERR_NONE) {
-    Serial.println("Success!");
-  } else {
-    Serial.print("Failed, code ");
+  if (state != RADIOLIB_ERR_NONE) {
+    Serial.print("LoRa init failed: ");
     Serial.println(state);
-    while (true); // block forever
+    while (true) delay(10);
   }
-  
+
+  // === MUST MATCH STRICTLY WITH TRANSMITTER ===
   radio.setFrequency(868.0);
-  radio.setBandwidth(500.0);
-  radio.setSpreadingFactor(5);
+  radio.setBandwidth(125.0);
+  radio.setSpreadingFactor(7); // Updated to 7 to match your new TX code!
   radio.setCodingRate(4);
   radio.setPreambleLength(8);
   radio.setCRC(true);
 
-  connectWiFi();
-  mqttClient.setServer(mqtt_server, mqtt_port);
-  mqttClient.setBufferSize(1024); // Ensure enough space for the large JSON packet
-  connectMQTT();
-
-  Serial.println("Ground Station Ready! Listening for telemetry...");
+  Serial.println("Ground Station Ready! Send this terminal to the Serial Bridge.");
 }
 
 void loop() {
-  // This will block until a packet is actually received
-  int state = radio.receive((uint8_t*)&rxPacket, sizeof(rxPacket));
+  // Receive LoRa Packet as an ASCII String
+  String rxStr;
+  int state = radio.receive(rxStr);
 
-  // The moment we receive a packet, we must ensure our connections (WiFi + MQTT) are still alive.
-  // Because 'radio.receive' was blocking, the connection may have timed out if there was a long delay.
-  if (WiFi.status() != WL_CONNECTED) {
-    connectWiFi();
-  }
-  
-  if (!mqttClient.connected()) {
-    connectMQTT();
-  }
-  
-  mqttClient.loop();
-
-  // Process the packet if received properly
   if (state == RADIOLIB_ERR_NONE) {
-
     digitalWrite(LED, HIGH);
 
-    // ===== Convert Values =====
-    double lat = rxPacket.lat / 1e6;
-    double lng = rxPacket.lng / 1e6;
-    double gpsAlt = rxPacket.gpsAlt;
+    // ===== Parse the comma-separated string =====
+    int count = 0;
+    double vals[15] = {0}; // Double precision array to protect GPS decimals
+    int startIdx = 0;
 
-    float ax = rxPacket.ax / 100.0;
-    float ay = rxPacket.ay / 100.0;
-    float az = rxPacket.az / 100.0;
+    for (int i = 0; i <= rxStr.length(); i++) {
+      if (rxStr.charAt(i) == ',' || i == rxStr.length()) {
+        String token = rxStr.substring(startIdx, i);
+        if (count < 15) {
+          vals[count] = token.toDouble();
+          count++;
+        }
+        startIdx = i + 1;
+      }
+    }
 
-    float gx = rxPacket.gx / 100.0;
-    float gy = rxPacket.gy / 100.0;
-    float gz = rxPacket.gz / 100.0;
+    // Ensure we got at least the 13 required variables from your TX
+    if (count >= 13) {
+      uint16_t pktCount = (uint16_t)vals[0];
+      double lat = vals[1];
+      double lng = vals[2];
+      float gpsAlt = vals[3];
 
-    float temperature = rxPacket.temperature / 100.0;
-    float pressure = rxPacket.pressure;
-    float bmpAlt = rxPacket.bmpAlt;
+      float ax = vals[4];
+      float ay = vals[5];
+      float az = vals[6];
 
-    float thermoTemp = rxPacket.thermoTemp / 100.0;
-    float strain = rxPacket.strain / 10000.0;
+      float gx = vals[7]; // Raw gyro rates from Tx!
+      float gy = vals[8];
+      float gz = vals[9];
 
-    unsigned long now = millis();
+      float temperature = vals[10];
+      float pressure = vals[11];
+      float bmpAlt = vals[12];
+      
+      // Default to 0 for missing elements
+      float thermoTemp = 0.0;
+      float strain = 0.0;
+      
+      unsigned long timestamp = millis();
+      float rssi = radio.getRSSI();
+      float snr = radio.getSNR();
 
-    // ===== Create JSON =====
-    String jsonPayload = "{";
-    jsonPayload += "\"version\":\"1.0\",";
-    jsonPayload += "\"mission\":\"EKLAVYA_TEST\",";
-    jsonPayload += "\"timestamp_ms\":" + String(now) + ",";
+      // ===== Create Pristine JSON for Backend Serial Bridge =====
+      String json = "{";
+      json += "\"version\":\"1.0\",";
+      json += "\"mission\":\"EKLAVYA_LIVE\",";
+      json += "\"timestamp_ms\":" + String(timestamp) + ",";
+      json += "\"packet\":{\"count\":" + String(pktCount) + "},";
 
-    jsonPayload += "\"packet\":{\"count\":" + String(rxPacket.packetCount) + "},";
+      json += "\"gps\":{";
+      json += "\"latitude\":" + String(lat, 6) + ",";
+      json += "\"longitude\":" + String(lng, 6) + ",";
+      json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
+      json += "\"valid\":true},";
 
-    jsonPayload += "\"gps\":{";
-    jsonPayload += "\"latitude\":" + String(lat,6) + ",";
-    jsonPayload += "\"longitude\":" + String(lng,6) + ",";
-    jsonPayload += "\"altitude_m\":" + String(gpsAlt,2) + ",";
-    jsonPayload += "\"valid\":true},";
+      json += "\"imu\":{";
+      json += "\"acceleration\":{";
+      json += "\"x_mps2\":" + String(ax, 2) + ",";
+      json += "\"y_mps2\":" + String(ay, 2) + ",";
+      json += "\"z_mps2\":" + String(az, 2) + "},";
+      json += "\"gyroscope\":{";
+      json += "\"x_rps\":" + String(gx, 3) + ",";
+      json += "\"y_rps\":" + String(gy, 3) + ",";
+      json += "\"z_rps\":" + String(gz, 3) + "},";
+      json += "\"calibrated\":true},";
 
-    jsonPayload += "\"imu\":{";
-    jsonPayload += "\"acceleration\":{";
-    jsonPayload += "\"x_mps2\":" + String(ax,2) + ",";
-    jsonPayload += "\"y_mps2\":" + String(ay,2) + ",";
-    jsonPayload += "\"z_mps2\":" + String(az,2) + "},";
-    jsonPayload += "\"gyroscope\":{";
-    jsonPayload += "\"x_rps\":" + String(gx,3) + ",";
-    jsonPayload += "\"y_rps\":" + String(gy,3) + ",";
-    jsonPayload += "\"z_rps\":" + String(gz,3) + "},";
-    jsonPayload += "\"calibrated\":true},";
+      json += "\"bmp280\":{";
+      json += "\"temperature_c\":" + String(temperature, 2) + ",";
+      json += "\"pressure_hpa\":" + String(pressure, 2) + ",";
+      json += "\"altitude_m\":" + String(bmpAlt, 2) + ",";
+      json += "\"calibrated\":true},";
 
-    jsonPayload += "\"bmp280\":{";
-    jsonPayload += "\"temperature_c\":" + String(temperature,2) + ",";
-    jsonPayload += "\"pressure_hpa\":" + String(pressure,2) + ",";
-    jsonPayload += "\"altitude_m\":" + String(bmpAlt,2) + ",";
-    jsonPayload += "\"calibrated\":true},";
+      json += "\"structure\":{";
+      json += "\"thermocouple_c\":" + String(thermoTemp, 2) + ",";
+      json += "\"strain_microstrain\":" + String(strain, 4) + "},";
 
-    jsonPayload += "\"structure\":{";
-    jsonPayload += "\"thermocouple_c\":" + String(thermoTemp,2) + ",";
-    jsonPayload += "\"strain_microstrain\":" + String(strain,1) + "},";
+      json += "\"radio\":{";
+      json += "\"rssi_dbm\":" + String(rssi, 1) + ",";
+      json += "\"snr_db\":" + String(snr, 1) + "}";
+      json += "}";
 
-    jsonPayload += "\"radio\":{";
-    jsonPayload += "\"rssi_dbm\":" + String(radio.getRSSI()) + ",";
-    jsonPayload += "\"snr_db\":" + String(radio.getSNR()) + "}";
+      // ===== OUTPUT TO USB SERIAL BRIDGE =====
+      // The serial-bridge.js script natively reads this JSON line instantly!
+      Serial.println(json);
 
-    jsonPayload += "}";
-
-    // Publish to the local MQTT broker
-    bool published = mqttClient.publish(mqtt_topic, jsonPayload.c_str(), false);
-
-    Serial.println(jsonPayload);
-    if(published) {
-      Serial.println(" -> Successfully published to WiFi MQTT");
     } else {
-      Serial.println(" -> FAILED to publish to MQTT");
+       Serial.println("-> Ignored Packet: Too few CSV arguments received.");
     }
 
     delay(30);

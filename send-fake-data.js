@@ -37,79 +37,79 @@ function clamp(val, min, max) {
 // ─── Flight profile ─────────────────────────────────────────────────────────
 function getFlightData(elapsedSec) {
     let altitude_m, accel_x, accel_y, accel_z;
-    let pitch_deg, roll_deg, yaw_deg;
     let gyro_x, gyro_y, gyro_z;
     let temperature_c;
     let phase;
 
+    // ─── IMPORTANT: Server expects X-axis = vertical (rocket long axis) ───
+    // accel_x  → vertical axis (gravity = -9.81 when sitting still, large negative during burn)
+    // accel_y  → lateral axis
+    // accel_z  → lateral axis
+    // gyro_x   → yaw rate   (spin around vertical/X axis)
+    // gyro_y   → pitch rate (tilt around Y axis)
+    // gyro_z   → roll rate  (tilt around Z axis)
+    // All gyro values in radians/sec — server converts to deg/s internally.
+
     if (elapsedSec < 2) {
-        // ── PAD IDLE ──
+        // ── PAD IDLE — sitting still on launch pad ──
         phase       = 'PAD';
         altitude_m  = 0 + noise(0.3);
-        accel_x     = noise(0.05);
-        accel_y     = noise(0.05);
-        accel_z     = 9.81 + noise(0.1);   // sitting still, feels ~1g upward
-        pitch_deg   = noise(1.0);
-        roll_deg    = noise(1.0);
-        yaw_deg     = noise(0.5);
-        gyro_x      = noise(0.01);
-        gyro_y      = noise(0.01);
-        gyro_z      = noise(0.01);
+        accel_x     = -(9.81 + noise(0.1));   // gravity along X (vertical), pointing down
+        accel_y     = noise(0.05);             // no lateral force
+        accel_z     = noise(0.05);
+        // Small vibrations — model should be mostly still with slight wobble
+        gyro_x      = noise(0.02);             // tiny yaw drift
+        gyro_y      = 0.15 * Math.sin(elapsedSec * 2.0) + noise(0.03);  // gentle pitch sway
+        gyro_z      = 0.10 * Math.sin(elapsedSec * 1.5) + noise(0.03);  // gentle roll sway
         temperature_c = 28 + noise(0.5);
 
     } else if (elapsedSec < 7) {
-        // ── MOTOR BURN ──
+        // ── MOTOR BURN — fast climb, high acceleration ──
         phase       = 'BURN';
         const t     = elapsedSec - 2;      // 0–5s of burn
-        altitude_m  = 0.5 * 35 * t * t;   // 35 m/s² net upward acceleration → parabolic climb
-        accel_x     = noise(0.3);
-        accel_y     = noise(0.3);
-        accel_z     = -(9.81 + 30 + noise(2)); // ~3g during burn (felt as –z from rocket POV)
-        pitch_deg   = 85 + noise(2);       // nearly vertical
-        roll_deg    = noise(3);
-        yaw_deg     = noise(2);
-        gyro_x      = noise(0.05);
-        gyro_y      = noise(0.05);
-        gyro_z      = noise(0.02);
-        temperature_c = 28 + t * 1.5 + noise(1); // heats up slightly
+        altitude_m  = 0.5 * 35 * t * t;   // 35 m/s² net upward → parabolic climb
+        accel_x     = -(9.81 + 30 + noise(2));  // ~4g thrust along vertical X
+        accel_y     = noise(0.5);                // slight lateral vibration from motor
+        accel_z     = noise(0.5);
+        // During burn: rocket pitches slightly, rolls from motor torque, yaw oscillates
+        gyro_x      = 0.8 * Math.sin(elapsedSec * 3.0) + noise(0.1);   // roll spin from motor torque
+        gyro_y      = 0.5 * Math.sin(elapsedSec * 1.8) + 0.3 * Math.cos(elapsedSec * 0.7) + noise(0.1); // pitch oscillation
+        gyro_z      = 0.4 * Math.sin(elapsedSec * 2.2) + noise(0.08);  // roll wobble
+        temperature_c = 28 + t * 1.5 + noise(1);
 
     } else if (elapsedSec < 25) {
-        // ── COAST (climbing but decelerating due to drag + gravity) ──
+        // ── COAST — climbing but decelerating (drag + gravity) ──
         phase        = 'COAST';
         const burnEnd = 0.5 * 35 * 25;    // altitude at end of burn (~437m)
         const t       = elapsedSec - 7;   // time since burnout
         const v0      = 35 * 5;           // velocity at burnout ~175 m/s
         altitude_m   = burnEnd + v0 * t - 0.5 * 9.81 * t * t;
         altitude_m   = Math.max(0, altitude_m);
-        const decel   = -(9.81 + clamp(10 * (1 - t / 18), 0, 10));
-        accel_x      = noise(0.2);
+        // Near-weightless during coast → accel_x approaches 0 (freefall)
+        const dragDecel = clamp(10 * (1 - t / 18), 0, 10);
+        accel_x      = -(9.81 + dragDecel) + noise(0.3);
         accel_y      = noise(0.2);
-        accel_z      = decel + noise(0.5);
-        pitch_deg    = clamp(85 - t * 2, 0, 90) + noise(2); // slowly pitching over
-        roll_deg     = noise(4);
-        yaw_deg      = noise(3);
-        gyro_x       = noise(0.04);
-        gyro_y       = noise(0.04);
-        gyro_z       = noise(0.02);
-        temperature_c = 20 + noise(1);  // colder at altitude
+        accel_z      = noise(0.2);
+        // Rocket slowly pitches over and tumbles gently during coast
+        gyro_x      = 0.3 * Math.sin(elapsedSec * 0.5) + noise(0.05);  // slow yaw drift
+        gyro_y      = 0.6 * Math.sin(elapsedSec * 0.8) + 0.2 * Math.cos(elapsedSec * 1.3) + noise(0.08); // pitch-over
+        gyro_z      = 0.35 * Math.sin(elapsedSec * 0.6) + noise(0.06); // slow roll
+        temperature_c = 20 + noise(1);    // colder at altitude
 
     } else {
-        // ── DESCENT ──
+        // ── DESCENT — falling back, parachute deployed ──
         phase        = 'DESCENT';
-        // Peak altitude from coast phase calculation at t=18s
         const v0      = 35 * 5;
         const peakAlt = (0.5 * 35 * 25) + v0 * 18 - 0.5 * 9.81 * 18 * 18;
         const t       = elapsedSec - 25;
-        altitude_m   = Math.max(0, peakAlt - 0.5 * 20 * t * t); // chute: ~20 m/s² "braking"
-        accel_x      = noise(0.3);
-        accel_y      = noise(0.3);
-        accel_z      = 20 + noise(1);  // drag deceleration under chute
-        pitch_deg    = noise(10);       // tumbling near chute deployment
-        roll_deg     = noise(15);
-        yaw_deg      = noise(8);
-        gyro_x       = noise(0.2);
-        gyro_y       = noise(0.2);
-        gyro_z       = noise(0.1);
+        altitude_m   = Math.max(0, peakAlt - 0.5 * 20 * t * t); // chute: ~20 m/s² braking
+        accel_x      = -(20 + noise(1));       // drag deceleration under chute along X
+        accel_y      = noise(0.5);
+        accel_z      = noise(0.5);
+        // Under parachute: swinging/pendulum motion — large, visible oscillations
+        gyro_x      = 1.2 * Math.sin(elapsedSec * 2.5) + noise(0.2);   // swinging yaw
+        gyro_y      = 1.5 * Math.sin(elapsedSec * 1.8) + 0.5 * Math.cos(elapsedSec * 3.0) + noise(0.15); // big pitch swings
+        gyro_z      = 1.0 * Math.sin(elapsedSec * 2.0) + 0.4 * Math.cos(elapsedSec * 1.2) + noise(0.15); // big roll swings
         temperature_c = 25 + noise(1);
     }
 
@@ -121,11 +121,6 @@ function getFlightData(elapsedSec) {
         bmpAlt:     parseFloat(bmpAlt.toFixed(2)),
         accel:      { x: parseFloat(accel_x.toFixed(4)), y: parseFloat(accel_y.toFixed(4)), z: parseFloat(accel_z.toFixed(4)) },
         gyro:       { x: parseFloat(gyro_x.toFixed(4)),  y: parseFloat(gyro_y.toFixed(4)),  z: parseFloat(gyro_z.toFixed(4)) },
-        orientation: {
-            pitch: parseFloat(pitch_deg.toFixed(2)),
-            roll:  parseFloat(roll_deg.toFixed(2)),
-            yaw:   parseFloat(yaw_deg.toFixed(2))
-        },
         temperature_c: parseFloat(temperature_c.toFixed(2))
     };
 }
@@ -160,9 +155,9 @@ function buildPacket(elapsedSec) {
                 y_rps: d.gyro.y,
                 z_rps: d.gyro.z
             },
-            pitch: d.orientation.pitch,
-            roll:  d.orientation.roll,
-            yaw:   d.orientation.yaw
+            pitch: 0,  // Server will compute via complementary filter
+            roll:  0,
+            yaw:   0
         },
         bmp280: {
             temperature_c: d.temperature_c,

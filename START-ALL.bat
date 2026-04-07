@@ -4,10 +4,9 @@ echo   TELEMETRY SYSTEM - COMPLETE STARTUP
 echo ========================================
 echo.
 echo This script will:
-echo  [1] Start Mosquitto MQTT Broker
-echo  [2] Start Backend Server (connects to ESP32)
-echo  [3] Start Admin Interface
-echo  [4] Open Admin Interface in browser
+echo  [1] Start Backend Server (connects to ESP32)
+echo  [2] Start Admin Interface
+echo  [3] Open Admin Interface in browser
 echo.
 echo Make sure:
 echo  - Mosquitto is installed and in PATH
@@ -25,15 +24,16 @@ echo Starting Services...
 echo ========================================
 echo.
 
-REM Start Mosquitto MQTT Broker
-echo [1/3] Starting Mosquitto MQTT Broker...
-start "Mosquitto Broker" cmd /c "START-MQTT.bat"
-timeout /t 2 /nobreak >nul
 
 REM Start Backend Server
-echo [2/3] Starting Backend Server...
+echo [1/3] Starting Backend Server...
 start "Backend Server" cmd /k "cd server && node index.js"
 timeout /t 3 /nobreak >nul
+
+REM Start Serial Bridge
+echo [2/3] Starting Serial Bridge USB Link...
+start "Serial Bridge Gateway" cmd /k "cd server && node serial-bridge.js"
+timeout /t 2 /nobreak >nul
 
 REM Start Admin Interface
 echo [3/3] Starting Admin Interface...
