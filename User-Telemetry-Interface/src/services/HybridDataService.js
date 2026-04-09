@@ -4,13 +4,13 @@ import { getDatabase, ref, onValue, query, limitToLast, orderByChild, startAt } 
 // Firebase configuration (public read-only)
 // TODO: Replace with your actual Firebase config
 const firebaseConfig = {
-    apiKey: "AIzaSyBvW-QWxywBSFXrALrOfxzkCSevB45blRI",
-    authDomain: "rocket-telemetry-539c5.firebaseapp.com",
-    databaseURL: "https://rocket-telemetry-539c5-default-rtdb.firebaseio.com",
-    projectId: "rocket-telemetry-539c5",
-    storageBucket: "rocket-telemetry-539c5.firebasestorage.app",
-    messagingSenderId: "925759954620",
-    appId: "1:925759954620:web:f08a709cb05a6942047ab9"
+    apiKey: "AIzaSyDcnnG9oHHmC4rC7NgiqeBiIvaHxlRRQHQ",
+    authDomain: "test-d0075.firebaseapp.com",
+    databaseURL: "https://test-d0075-default-rtdb.firebaseio.com",
+    projectId: "test-d0075",
+    storageBucket: "test-d0075.firebasestorage.app",
+    messagingSenderId: "292384353842",
+    appId: "1:292384353842:web:f0960cb3c29085e44fd62b"
 };
 
 // Initialize Firebase

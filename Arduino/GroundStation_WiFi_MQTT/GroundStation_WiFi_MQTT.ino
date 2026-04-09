@@ -1,7 +1,31 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include <SPI.h>
 #include <RadioLib.h>
 
 #define LED 2
+
+// ===================== WIFI & FIREBASE =====================
+const char* ssid = "Avaneesh";          // <-- CHANGE THIS to your Hotspot Name
+const char* password = "123456789";  // <-- CHANGE THIS to your Hotspot Password
+String FIREBASE_URL = "https://test-d0075-default-rtdb.firebaseio.com/telemetry/"; // Your Firebase Database
+
+// ===================== BINARY PACKET STRUCT (must match TX exactly) =====================
+#pragma pack(push, 1)
+struct TelemetryPacket {
+  uint16_t packetCount;
+  int32_t  lat;
+  int32_t  lng;
+  int16_t  gpsAlt;
+  int16_t  ax, ay, az;
+  int16_t  gx, gy, gz;
+  int16_t  temperature;
+  uint16_t pressure;
+  int16_t  bmpAlt;
+  int16_t  thermoTemp;
+  int16_t  strain;
+};
+#pragma pack(pop)
 
 // ===================== LORA =====================
 SX1262 radio = new Module(5, 26, 14, 27);
@@ -15,7 +39,17 @@ void setup() {
 
   SPI.begin(18, 19, 23);   // SCK, MISO, MOSI
 
-  Serial.println("Booting RX Ground Station (Serial USB Mode)...");
+  Serial.println("Booting RX Ground Station (Firebase Mode)...");
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWiFi Connected! IP Address: ");
+  Serial.println(WiFi.localIP());
 
   int state = radio.begin();
   if (state != RADIOLIB_ERR_NONE) {
@@ -26,8 +60,8 @@ void setup() {
 
   // === MUST MATCH STRICTLY WITH TRANSMITTER ===
   radio.setFrequency(868.0);
-  radio.setBandwidth(125.0);
-  radio.setSpreadingFactor(7); // Updated to 7 to match your new TX code!
+  radio.setBandwidth(250.0);
+  radio.setSpreadingFactor(12); // Updated to 7 to match your new TX code!
   radio.setCodingRate(4);
   radio.setPreambleLength(8);
   radio.setCRC(true);
@@ -36,104 +70,121 @@ void setup() {
 }
 
 void loop() {
-  // Receive LoRa Packet as an ASCII String
-  String rxStr;
-  int state = radio.receive(rxStr);
+  // ===== Receive LoRa Packet as RAW BINARY (matching TX struct) =====
+  uint8_t rxBuf[sizeof(TelemetryPacket)];
+  size_t rxLen = sizeof(TelemetryPacket);
+  int state = radio.receive(rxBuf, rxLen);
 
   if (state == RADIOLIB_ERR_NONE) {
     digitalWrite(LED, HIGH);
 
-    // ===== Parse the comma-separated string =====
-    int count = 0;
-    double vals[15] = {0}; // Double precision array to protect GPS decimals
-    int startIdx = 0;
-
-    for (int i = 0; i <= rxStr.length(); i++) {
-      if (rxStr.charAt(i) == ',' || i == rxStr.length()) {
-        String token = rxStr.substring(startIdx, i);
-        if (count < 15) {
-          vals[count] = token.toDouble();
-          count++;
-        }
-        startIdx = i + 1;
-      }
+    // Validate packet size
+    if (rxLen != sizeof(TelemetryPacket)) {
+      Serial.print("-> Ignored Packet: Wrong size. Got ");
+      Serial.print(rxLen);
+      Serial.print(" bytes, expected ");
+      Serial.println(sizeof(TelemetryPacket));
+      digitalWrite(LED, LOW);
+      return;
     }
 
-    // Ensure we got at least the 13 required variables from your TX
-    if (count >= 13) {
-      uint16_t pktCount = (uint16_t)vals[0];
-      double lat = vals[1];
-      double lng = vals[2];
-      float gpsAlt = vals[3];
+    // ===== Deserialize binary struct =====
+    TelemetryPacket pkt;
+    memcpy(&pkt, rxBuf, sizeof(TelemetryPacket));
 
-      float ax = vals[4];
-      float ay = vals[5];
-      float az = vals[6];
+    // Decode fields (reverse the scaling applied by TX)
+    uint16_t pktCount   = pkt.packetCount;
+    double   lat        = pkt.lat  / 1e6;
+    double   lng        = pkt.lng  / 1e6;
+    float    gpsAlt     = (float)pkt.gpsAlt;
 
-      float gx = vals[7]; // Raw gyro rates from Tx!
-      float gy = vals[8];
-      float gz = vals[9];
+    float ax = pkt.ax / 100.0f;
+    float ay = pkt.ay / 100.0f;
+    float az = pkt.az / 100.0f;
 
-      float temperature = vals[10];
-      float pressure = vals[11];
-      float bmpAlt = vals[12];
-      
-      // Default to 0 for missing elements
-      float thermoTemp = 0.0;
-      float strain = 0.0;
-      
-      unsigned long timestamp = millis();
-      float rssi = radio.getRSSI();
-      float snr = radio.getSNR();
+    float gx = pkt.gx / 100.0f;
+    float gy = pkt.gy / 100.0f;
+    float gz = pkt.gz / 100.0f;
 
-      // ===== Create Pristine JSON for Backend Serial Bridge =====
-      String json = "{";
-      json += "\"version\":\"1.0\",";
-      json += "\"mission\":\"EKLAVYA_LIVE\",";
-      json += "\"timestamp_ms\":" + String(timestamp) + ",";
-      json += "\"packet\":{\"count\":" + String(pktCount) + "},";
+    float temperature = pkt.temperature / 100.0f;
+    float pressure    = (float)pkt.pressure;       // stored as integer hPa
+    float bmpAlt      = (float)pkt.bmpAlt;
 
-      json += "\"gps\":{";
-      json += "\"latitude\":" + String(lat, 6) + ",";
-      json += "\"longitude\":" + String(lng, 6) + ",";
-      json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
-      json += "\"valid\":true},";
+    float thermoTemp  = pkt.thermoTemp / 100.0f;
+    float strain      = pkt.strain     / 10000.0f;
 
-      json += "\"imu\":{";
-      json += "\"acceleration\":{";
-      json += "\"x_mps2\":" + String(ax, 2) + ",";
-      json += "\"y_mps2\":" + String(ay, 2) + ",";
-      json += "\"z_mps2\":" + String(az, 2) + "},";
-      json += "\"gyroscope\":{";
-      json += "\"x_rps\":" + String(gx, 3) + ",";
-      json += "\"y_rps\":" + String(gy, 3) + ",";
-      json += "\"z_rps\":" + String(gz, 3) + "},";
-      json += "\"calibrated\":true},";
+    unsigned long timestamp = millis();
+    float rssi = radio.getRSSI();
+    float snr  = radio.getSNR();
 
-      json += "\"bmp280\":{";
-      json += "\"temperature_c\":" + String(temperature, 2) + ",";
-      json += "\"pressure_hpa\":" + String(pressure, 2) + ",";
-      json += "\"altitude_m\":" + String(bmpAlt, 2) + ",";
-      json += "\"calibrated\":true},";
+    // ===== Build JSON for Firebase =====
+    String json = "{";
+    json += "\"version\":\"1.0\",";
+    json += "\"mission\":\"EKLAVYA_LIVE\",";
+    json += "\"timestamp_ms\":" + String(timestamp) + ",";
+    json += "\"packet\":{\"count\":" + String(pktCount) + "},";
 
-      json += "\"structure\":{";
-      json += "\"thermocouple_c\":" + String(thermoTemp, 2) + ",";
-      json += "\"strain_microstrain\":" + String(strain, 4) + "},";
+    json += "\"gps\":{";
+    json += "\"latitude\":"  + String(lat, 6) + ",";
+    json += "\"longitude\":" + String(lng, 6) + ",";
+    json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
+    json += "\"valid\":true},";
 
-      json += "\"radio\":{";
-      json += "\"rssi_dbm\":" + String(rssi, 1) + ",";
-      json += "\"snr_db\":" + String(snr, 1) + "}";
-      json += "}";
+    json += "\"imu\":{";
+    json += "\"acceleration\":{";
+    json += "\"x_mps2\":" + String(ax, 2) + ",";
+    json += "\"y_mps2\":" + String(ay, 2) + ",";
+    json += "\"z_mps2\":" + String(az, 2) + "},";
+    json += "\"gyroscope\":{";
+    json += "\"x_rps\":" + String(gx, 3) + ",";
+    json += "\"y_rps\":" + String(gy, 3) + ",";
+    json += "\"z_rps\":" + String(gz, 3) + "},";
+    json += "\"calibrated\":true},";
 
-      // ===== OUTPUT TO USB SERIAL BRIDGE =====
-      // The serial-bridge.js script natively reads this JSON line instantly!
-      Serial.println(json);
+    json += "\"bmp280\":{";
+    json += "\"temperature_c\":" + String(temperature, 2) + ",";
+    json += "\"pressure_hpa\":" + String(pressure, 2) + ",";
+    json += "\"altitude_m\":"   + String(bmpAlt, 2) + ",";
+    json += "\"calibrated\":true},";
 
+    json += "\"structure\":{";
+    json += "\"thermocouple_c\":"      + String(thermoTemp, 2) + ",";
+    json += "\"strain_microstrain\":" + String(strain, 4) + "},";
+
+    json += "\"radio\":{";
+    json += "\"rssi_dbm\":" + String(rssi, 1) + ",";
+    json += "\"snr_db\":"+   String(snr, 1) + "}";
+    json += "}";
+
+    // ===== Debug print =====
+    Serial.println(json);
+
+    // ===== Push to Firebase =====
+    if (WiFi.status() == WL_CONNECTED) {
+      HTTPClient http;
+      String putUrl = FIREBASE_URL + String(timestamp) + ".json";
+      http.begin(putUrl);
+      http.addHeader("Content-Type", "application/json");
+      int httpResponseCode = http.PUT(json);
+      if (httpResponseCode > 0) {
+        Serial.print("Firebase OK! Code: ");
+        Serial.println(httpResponseCode);
+      } else {
+        Serial.print("Firebase Error: ");
+        Serial.println(httpResponseCode);
+      }
+      http.end();
     } else {
-       Serial.println("-> Ignored Packet: Too few CSV arguments received.");
+      Serial.println("WiFi Disconnected, skipping Firebase push");
     }
 
     delay(30);
     digitalWrite(LED, LOW);
+
+  } else if (state == RADIOLIB_ERR_RX_TIMEOUT) {
+    // Normal — just waiting for a packet
+  } else {
+    Serial.print("LoRa RX Error: ");
+    Serial.println(state);
   }
 }

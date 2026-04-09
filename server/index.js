@@ -38,6 +38,36 @@ try {
         }).catch(err => {
             console.error("[Backend] Session creation error:", err.message);
         });
+
+        // =====================================================================
+        // FIREBASE REAL-TIME LISTENER
+        // The ESP32 Ground Station writes directly to /telemetry/{timestamp}.
+        // This listener picks up every new entry and feeds it into the normal
+        // processPacket pipeline → WebSocket → UI.
+        // =====================================================================
+        const telemetryRef = db.ref('telemetry');
+
+        // limitToLast(1) on 'value' fires once to skip historical data.
+        // Then we switch to 'child_added' which fires for every NEW entry.
+        telemetryRef.limitToLast(1).once('value', () => {
+            console.log('[Firebase Listener] Skipped historical data. Now watching for new packets...');
+
+            telemetryRef.limitToLast(1).on('child_added', (snapshot) => {
+                try {
+                    const packet = snapshot.val();
+                    if (!packet) return;
+
+                    // Avoid duplicate processing — only handle packets <10 seconds old
+                    const age = Date.now() - (packet.timestamp_ms || 0);
+                    if (age > 10000) return;
+
+                    console.log(`[Firebase Listener] New packet received from ESP32: ts=${packet.timestamp_ms}`);
+                    processPacket(packet);
+                } catch (e) {
+                    console.error('[Firebase Listener] Error processing packet:', e.message);
+                }
+            });
+        });
     }
 } catch (e) {
     console.error("[Backend] Firebase Init Error:", e.message);
