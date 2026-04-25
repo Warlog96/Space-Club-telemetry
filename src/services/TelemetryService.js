@@ -1,21 +1,18 @@
 /**
  * TelemetryService — Firebase Direct Mode
  *
- * Reads telemetry in real-time directly from Firebase Realtime Database.
- * The ESP32 Ground Station writes JSON packets to /telemetry/{timestamp}.
+ * Uses a single onValue(limitToLast(1)) listener.
+ * Firebase re-fires it automatically every time a new record
+ * is added to /telemetry — no polling, no manual timestamp tracking.
  *
- * Strategy:
- *  1. onValue(limitToLast(1)) — always seeds the UI with the most recent packet
- *     and fires again every time a NEW latest packet arrives.
- *  2. onChildAdded on the full ref — catches every new child pushed after connect.
- *
- * No WebSocket server required. Works from any device, anywhere.
+ * Works regardless of whether timestamps are epoch ms (fake sender)
+ * or millis() from ESP32.
  */
 
 import { db } from './firebaseConfig';
-import { ref, query, limitToLast, onValue, onChildAdded, off } from 'firebase/database';
+import { ref, query, limitToLast, onValue } from 'firebase/database';
 
-// ─── Orientation state (complementary filter) ────────────────────────────────
+// ── Orientation filter (complementary filter, mirrors ESP32 logic) ────────────
 const orientationState = {
   pitch: 0, roll: 0, yaw: 0,
   lastTimestamp: 0,
@@ -27,7 +24,7 @@ function calculateOrientation(imu, timestamp) {
   if (!imu || !imu.acceleration) return { roll: 0, pitch: 0, yaw: 0 };
 
   const dt = orientationState.lastTimestamp
-    ? (timestamp - orientationState.lastTimestamp) / 1000
+    ? Math.min((timestamp - orientationState.lastTimestamp) / 1000, 0.5) // cap at 0.5s
     : 0.1;
   orientationState.lastTimestamp = timestamp;
 
@@ -84,72 +81,55 @@ function enrichPacket(packet) {
   return packet;
 }
 
-// ─── TelemetryService ────────────────────────────────────────────────────────
+// ── TelemetryService ──────────────────────────────────────────────────────────
 class TelemetryService {
   constructor() {
-    this.subscribers  = [];
-    this.isConnected  = false;
-    this._unsubLatest = null;   // unsubscribe for onValue(limitToLast(1))
-    this._unsubNew    = null;   // unsubscribe for onChildAdded
-    this._latestTs    = 0;      // timestamp of the last packet we've emitted
+    this.subscribers = [];
+    this.isConnected = false;
+    this._unsub      = null;   // Firebase listener cleanup fn
+    this._lastKey    = null;   // Firebase key of last delivered packet
   }
 
   connect() {
-    if (this._unsubLatest) return; // already connected
+    if (this._unsub) return; // already connected
 
-    console.log('[TelemetryService] Connecting to Firebase Realtime Database...');
+    console.log('[TelemetryService] Connecting to Firebase...');
 
-    const telemetryRef  = ref(db, 'telemetry');
-    const latestQuery   = query(telemetryRef, limitToLast(1));
+    const latestQuery = query(ref(db, 'telemetry'), limitToLast(1));
 
-    // ── 1. onValue(limitToLast(1)) — fires immediately with latest child,
-    //       AND fires again every time a brand-new entry becomes the latest.
-    this._unsubLatest = onValue(latestQuery, (snapshot) => {
+    // onValue fires immediately with the current latest record,
+    // then fires again every time a NEW record becomes the latest.
+    // No timestamp comparison needed — Firebase handles ordering by key.
+    this._unsub = onValue(latestQuery, (snapshot) => {
       snapshot.forEach(child => {
+        const key = child.key;
         const pkt = child.val();
+
+        // Skip if Firebase fires with the same key we already processed
+        if (key === this._lastKey) return;
+        this._lastKey = key;
+
         if (!pkt?.timestamp_ms) return;
 
-        if (pkt.timestamp_ms > this._latestTs) {
-          this._latestTs = pkt.timestamp_ms;
-          const enriched = enrichPacket({ ...pkt });
-          if (enriched) {
-            this.isConnected = true;
-            this.emit(enriched);
-          }
+        const enriched = enrichPacket({ ...pkt });
+        if (enriched) {
+          this.isConnected = true;
+          this.emit(enriched);
+          console.log(`[TelemetryService] Packet received — key: ${key} ts: ${pkt.timestamp_ms}`);
         }
       });
 
       this.isConnected = true;
-      console.log(`[TelemetryService] Firebase onValue fired. Last ts: ${this._latestTs}`);
     });
-
-    // ── 2. onChildAdded — catches every new child node pushed after we connect.
-    //       Firebase replays existing children first; we skip them via _latestTs.
-    //       Small delay so _latestTs is populated from onValue before childAdded fires.
-    setTimeout(() => {
-      this._unsubNew = onChildAdded(telemetryRef, (snapshot) => {
-        try {
-          const packet = snapshot.val();
-          if (!packet?.timestamp_ms) return;
-          if (packet.timestamp_ms <= this._latestTs) return; // already handled
-
-          this._latestTs = packet.timestamp_ms;
-          const enriched = enrichPacket({ ...packet });
-          if (enriched) {
-            this.isConnected = true;
-            this.emit(enriched);
-          }
-        } catch (e) {
-          console.error('[TelemetryService] Error processing packet:', e);
-        }
-      });
-    }, 1500); // wait 1.5 s for onValue to seed _latestTs first
   }
 
   disconnect() {
-    if (this._unsubLatest) { this._unsubLatest(); this._unsubLatest = null; }
-    if (this._unsubNew)    { this._unsubNew();    this._unsubNew    = null; }
+    if (this._unsub) {
+      this._unsub();
+      this._unsub = null;
+    }
     this.isConnected = false;
+    this._lastKey = null;
     console.log('[TelemetryService] Disconnected from Firebase');
   }
 
@@ -162,7 +142,9 @@ class TelemetryService {
 
   emit(packet) {
     this.subscribers.forEach(cb => {
-      try { cb(packet); } catch (e) { console.error('[TelemetryService] Subscriber error:', e); }
+      try { cb(packet); } catch (e) {
+        console.error('[TelemetryService] Subscriber error:', e);
+      }
     });
   }
 }
