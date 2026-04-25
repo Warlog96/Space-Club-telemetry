@@ -408,9 +408,12 @@ const RocketVisualizer = ({ data }) => {
 
 export default RocketVisualizer;
 
-// Preload the GLB model so it starts downloading immediately
-try {
-    useGLTF.preload('/models/rocket.glb');
-} catch (e) {
-    console.warn('[RocketVisualizer] GLB preload failed:', e);
+// Preload the GLB using a standard browser preload (no hook required)
+if (typeof window !== 'undefined') {
+    const link = document.createElement('link');
+    link.rel = 'preload';
+    link.as = 'fetch';
+    link.href = '/models/rocket.glb';
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
 }
