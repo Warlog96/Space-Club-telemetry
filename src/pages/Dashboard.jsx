@@ -136,10 +136,15 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
     const baroAlt = packet?.bmp280?.altitude_m ?? 0;
     const gpsLat = packet?.gps?.latitude?.toFixed(5) ?? '---';
     const gpsLon = packet?.gps?.longitude?.toFixed(5) ?? '---';
-    const gpsFix = packet?.gps?.fix ?? false;
+    const gpsFix = packet?.gps?.valid ?? packet?.gps?.fix ?? false;
     const gpsSats = packet?.gps?.satellites ?? 0;
     const temp = packet?.bmp280?.temperature_c?.toFixed(1) ?? '---';
-    const pressure = packet?.bmp280?.pressure_pa ? (packet.bmp280.pressure_pa / 100).toFixed(1) : '---';
+    // Arduino sends pressure_hpa (already in hPa); fallback to pressure_pa / 100 for legacy data
+    const pressure = packet?.bmp280?.pressure_hpa
+        ? Number(packet.bmp280.pressure_hpa).toFixed(1)
+        : packet?.bmp280?.pressure_pa
+            ? (packet.bmp280.pressure_pa / 100).toFixed(1)
+            : '---';
     const pitch = packet?.imu?.pitch?.toFixed(1) ?? '0.0';
     const roll = packet?.imu?.roll?.toFixed(1) ?? '0.0';
     const yaw = packet?.imu?.yaw?.toFixed(1) ?? '0.0';

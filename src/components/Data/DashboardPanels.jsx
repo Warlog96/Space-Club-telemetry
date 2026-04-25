@@ -203,25 +203,59 @@ export const RawLog = ({ data }) => {
     const prevPacketCount = useRef(0);
 
     useEffect(() => {
-        const currentPacketCount = data?.packet?.count || 0;
-        if (currentPacketCount !== prevPacketCount.current && currentPacketCount > 0) {
-            prevPacketCount.current = currentPacketCount;
-            const timestamp = data?.timestamp_ms || 0;
-            const seconds = Math.floor(timestamp / 1000);
-            const mm = Math.floor((seconds % 3600) / 60);
-            const ss = seconds % 60;
-            const timeStr = `T+${mm.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
-            const gpsLat = data?.gps?.latitude?.toFixed(5) || '0.00000';
-            const gpsLon = data?.gps?.longitude?.toFixed(5) || '0.00000';
-            const gpsAlt = data?.gps?.altitude_m?.toFixed(1) || '0.0';
-            const pitch = data?.imu?.pitch?.toFixed(1) || '0.0';
-            const roll = data?.imu?.roll?.toFixed(1) || '0.0';
-            const yaw = data?.imu?.yaw?.toFixed(1) || '0.0';
-            const bmpAlt = data?.bmp280?.altitude_m?.toFixed(1) || '0.0';
-            const line = `[${timeStr}] GPS:${gpsLat},${gpsLon},${gpsAlt}m | IMU:P${pitch} R${roll} Y${yaw} | ALT:${bmpAlt}m | #${currentPacketCount}`;
-            setLogLines(prev => [...prev.slice(-99), line]);
-        }
+        const ts = data?.timestamp_ms || 0;
+        if (!ts || ts === prevPacketCount.current) return;
+        prevPacketCount.current = ts;
+
+        // Format timestamp as T+mm:ss (relative to session start, using millis from ESP32)
+        const seconds = Math.floor(ts / 1000);
+        const mm = Math.floor((seconds % 3600) / 60);
+        const ss = seconds % 60;
+        const timeStr = `T+${mm.toString().padStart(2, '0')}:${ss.toString().padStart(2, '0')}`;
+
+        // GPS
+        const gpsLat = data?.gps?.latitude?.toFixed(6) ?? '0.000000';
+        const gpsLon = data?.gps?.longitude?.toFixed(6) ?? '0.000000';
+        const gpsAlt = data?.gps?.altitude_m?.toFixed(1) ?? '0.0';
+        const gpsOk  = (data?.gps?.valid || data?.gps?.fix) ? 'FIX' : 'NO-FIX';
+
+        // IMU – enriched pitch/roll/yaw added by TelemetryService
+        const pitch = data?.imu?.pitch?.toFixed(1) ?? '0.0';
+        const roll  = data?.imu?.roll?.toFixed(1)  ?? '0.0';
+        const yaw   = data?.imu?.yaw?.toFixed(1)   ?? '0.0';
+        // Raw accel
+        const ax = data?.imu?.acceleration?.x_mps2?.toFixed(2) ?? '0.00';
+        const ay = data?.imu?.acceleration?.y_mps2?.toFixed(2) ?? '0.00';
+        const az = data?.imu?.acceleration?.z_mps2?.toFixed(2) ?? '0.00';
+
+        // BMP280
+        const bmpAlt  = data?.bmp280?.altitude_m?.toFixed(1) ?? '0.0';
+        const bmpTemp = data?.bmp280?.temperature_c?.toFixed(1) ?? '0.0';
+        const bmpPres = data?.bmp280?.pressure_hpa ?? data?.bmp280?.pressure_pa
+            ? Number(data?.bmp280?.pressure_hpa ?? (data?.bmp280?.pressure_pa / 100)).toFixed(1)
+            : '0.0';
+
+        // Extras
+        const thermo = data?.structure?.thermocouple_c?.toFixed(1) ?? '---';
+        const strain = data?.structure?.strain_microstrain?.toFixed(4) ?? '---';
+        const rssi   = data?.radio?.rssi_dbm?.toFixed(1) ?? '---';
+        const snr    = data?.radio?.snr_db?.toFixed(1)   ?? '---';
+        const pkt    = data?.packet?.count ?? 0;
+
+        const line = [
+            `[${timeStr}]`,
+            `GPS:${gpsLat},${gpsLon} Alt:${gpsAlt}m ${gpsOk}`,
+            `| IMU P:${pitch} R:${roll} Y:${yaw}`,
+            `| Accel X:${ax} Y:${ay} Z:${az} m/s²`,
+            `| BARO:${bmpAlt}m ${bmpTemp}°C ${bmpPres}hPa`,
+            `| THR:${thermo}°C STR:${strain}`,
+            `| RF:${rssi}dBm SNR:${snr}dB`,
+            `| #${pkt}`,
+        ].join(' ');
+
+        setLogLines(prev => [...prev.slice(-199), line]);
     }, [data]);
+
 
     // Auto-scroll only within the log container — never moves the page
     useEffect(() => {
