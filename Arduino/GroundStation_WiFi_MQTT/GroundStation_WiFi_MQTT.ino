@@ -162,10 +162,10 @@ void loop() {
     // ===== Push to Firebase =====
     if (WiFi.status() == WL_CONNECTED) {
       HTTPClient http;
-      String putUrl = FIREBASE_URL + String(timestamp) + ".json";
-      http.begin(putUrl);
+      String postUrl = FIREBASE_URL + ".json";
+      http.begin(postUrl);
       http.addHeader("Content-Type", "application/json");
-      int httpResponseCode = http.PUT(json);
+      int httpResponseCode = http.POST(json);
       if (httpResponseCode > 0) {
         Serial.print("Firebase OK! Code: ");
         Serial.println(httpResponseCode);

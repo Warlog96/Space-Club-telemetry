@@ -17,6 +17,7 @@
     "leaflet": "^1.9.4",
     "lucide-react": "^0.574.0",
     "mqtt": "^5.14.1",
+    "puppeteer": "^24.42.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-leaflet": "^5.0.0",
