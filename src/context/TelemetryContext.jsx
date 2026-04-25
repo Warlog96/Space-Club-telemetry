@@ -50,30 +50,36 @@ export const TelemetryProvider = ({ children }) => {
     const getHistory = useCallback(() => historyRef.current, []);
 
     useEffect(() => {
-        telemetryService.connect();
-
+        // ── Subscribe FIRST, then connect ─────────────────────────────────────
+        // Firebase's onValue can fire from local cache almost synchronously.
+        // If connect() runs before subscribe(), that first emit() hits an empty
+        // subscriber list and the packet is silently lost.
         const unsubscribe = telemetryService.subscribe((data) => {
-            // 1. Push to circular buffer — O(1), no array copy
+            // 1. Push to circular buffer
             historyRef.current.push(data);
             if (historyRef.current.length > HISTORY_SIZE) {
                 historyRef.current.shift();
             }
 
-            // 2. Single batched state update for the live panel (every packet)
+            // 2. State update — triggers one re-render per packet
             setLiveState({ packet: data, isConnected: true });
 
-            // 3. Throttle graph/history re-renders: every 5th packet (~2 Hz at 10 Hz input)
+            // 3. Throttle graph re-renders to every 5th packet (~1 Hz at 1 pkt/s)
             packetCounterRef.current += 1;
             if (packetCounterRef.current % 5 === 0) {
                 setHistoryVersion(v => v + 1);
             }
         });
 
+        // Connect AFTER subscriber is registered
+        telemetryService.connect();
+
         return () => {
             unsubscribe();
             telemetryService.disconnect();
         };
     }, []);
+
 
     return (
         <TelemetryContext.Provider value={{

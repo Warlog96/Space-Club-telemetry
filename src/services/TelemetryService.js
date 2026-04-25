@@ -84,10 +84,11 @@ function enrichPacket(packet) {
 // ── TelemetryService ──────────────────────────────────────────────────────────
 class TelemetryService {
   constructor() {
-    this.subscribers = [];
-    this.isConnected = false;
-    this._unsub      = null;   // Firebase listener cleanup fn
-    this._lastKey    = null;   // Firebase key of last delivered packet
+    this.subscribers  = [];
+    this.isConnected  = false;
+    this._unsub       = null;
+    this._lastKey     = null;
+    this._lastEmitted = null;
   }
 
   connect() {
@@ -135,12 +136,18 @@ class TelemetryService {
 
   subscribe(callback) {
     this.subscribers.push(callback);
+    // Immediately deliver the last known packet to the new subscriber
+    // so the UI shows real data even if no new packets arrive yet.
+    if (this._lastEmitted) {
+      try { callback(this._lastEmitted); } catch (e) { /* ignore */ }
+    }
     return () => {
       this.subscribers = this.subscribers.filter(s => s !== callback);
     };
   }
 
   emit(packet) {
+    this._lastEmitted = packet;
     this.subscribers.forEach(cb => {
       try { cb(packet); } catch (e) {
         console.error('[TelemetryService] Subscriber error:', e);
