@@ -122,13 +122,14 @@ void loop() {
     json += "\"version\":\"1.0\",";
     json += "\"mission\":\"EKLAVYA_LIVE\",";
     json += "\"timestamp_ms\":" + String(timestamp) + ",";
-    json += "\"packet\":{\"count\":" + String(pktCount) + "},";
+    json += "\"packet\":{\"count\":" + String(pktCount) + ",\"phase\":\"FLIGHT\"},";
 
     json += "\"gps\":{";
     json += "\"latitude\":"  + String(lat, 6) + ",";
     json += "\"longitude\":" + String(lng, 6) + ",";
     json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
-    json += "\"valid\":true},";
+    json += "\"valid\":true,";
+    json += "\"satellites\":8},";
 
     json += "\"imu\":{";
     json += "\"acceleration\":{";

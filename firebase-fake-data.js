@@ -165,14 +165,14 @@ function buildPacket() {
 
 // ── Send a packet to Firebase via REST PUT ────────────────────────────────────
 function sendToFirebase(packet) {
-    const path = `${TELEMETRY_PATH}/${packet.timestamp_ms}.json`;
+    const path = `${TELEMETRY_PATH}.json`;
     const body  = JSON.stringify(packet);
 
     const url  = new URL(FIREBASE_DB_URL + path);
     const opts = {
         hostname: url.hostname,
         path:     url.pathname,
-        method:   'PUT',
+        method:   'POST',
         headers: {
             'Content-Type':   'application/json',
             'Content-Length': Buffer.byteLength(body)

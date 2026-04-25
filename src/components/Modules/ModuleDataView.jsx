@@ -20,12 +20,12 @@ const ModuleDataView = ({ moduleId, history, currentData }) => {
                 title: 'MPU6050 MODULE DATA',
                 icon: '⚙️',
                 fields: [
-                    { label: 'Gyro X', key: 'mpu6050.gyro_x', unit: '°/s', decimals: 2 },
-                    { label: 'Gyro Y', key: 'mpu6050.gyro_y', unit: '°/s', decimals: 2 },
-                    { label: 'Gyro Z', key: 'mpu6050.gyro_z', unit: '°/s', decimals: 2 },
-                    { label: 'Accel X', key: 'mpu6050.accel_x', unit: 'm/s²', decimals: 2 },
-                    { label: 'Accel Y', key: 'mpu6050.accel_y', unit: 'm/s²', decimals: 2 },
-                    { label: 'Accel Z', key: 'mpu6050.accel_z', unit: 'm/s²', decimals: 2 }
+                    { label: 'Gyro X', key: 'imu.gyroscope.x_rps', unit: 'rad/s', decimals: 2 },
+                    { label: 'Gyro Y', key: 'imu.gyroscope.y_rps', unit: 'rad/s', decimals: 2 },
+                    { label: 'Gyro Z', key: 'imu.gyroscope.z_rps', unit: 'rad/s', decimals: 2 },
+                    { label: 'Accel X', key: 'imu.acceleration.x_mps2', unit: 'm/s²', decimals: 2 },
+                    { label: 'Accel Y', key: 'imu.acceleration.y_mps2', unit: 'm/s²', decimals: 2 },
+                    { label: 'Accel Z', key: 'imu.acceleration.z_mps2', unit: 'm/s²', decimals: 2 }
                 ]
             },
             'bmp-module': {
