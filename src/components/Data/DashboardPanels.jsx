@@ -75,7 +75,7 @@ export const SystemStatus = ({ data }) => {
 
 // ─── 2. Mission Clock ─────────────────────────────────────────────────────────
 export const MissionClock = ({ timestamp }) => {
-    const [ignitionStatus, setIgnitionStatus] = useState(null);
+    const [launchTime, setLaunchTime] = useState(null);
     const [missionTime, setMissionTime] = useState(0);
     const [tick, setTick] = useState(0);
 
@@ -84,21 +84,19 @@ export const MissionClock = ({ timestamp }) => {
         return () => clearInterval(id);
     }, []);
 
+    // Record first non-zero timestamp as launch anchor
     useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const r = await fetch('http://localhost:3001/api/ignition/status');
-                if (r.ok) {
-                    const d = await r.json();
-                    setIgnitionStatus(d);
-                    setMissionTime(d.ignitionOn && d.launchTime ? Date.now() - d.launchTime : 0);
-                }
-            } catch (_) { }
-        };
-        fetchStatus();
-        const iv = setInterval(fetchStatus, 1000);
-        return () => clearInterval(iv);
-    }, []);
+        if (timestamp && timestamp > 0 && !launchTime) {
+            setLaunchTime(Date.now());
+        }
+    }, [timestamp]);
+
+    // Count up from launch anchor
+    useEffect(() => {
+        if (!launchTime) return;
+        const id = setInterval(() => setMissionTime(Date.now() - launchTime), 500);
+        return () => clearInterval(id);
+    }, [launchTime]);
 
     const formatTime = (ms) => {
         const s = Math.floor(ms / 1000);
@@ -109,13 +107,12 @@ export const MissionClock = ({ timestamp }) => {
         return `${h.toString().padStart(2, '0')}${sep}${m.toString().padStart(2, '0')}${sep}${ss.toString().padStart(2, '0')}`;
     };
 
-    const isLive = ignitionStatus?.ignitionOn || false;
+    const isLive = launchTime !== null;
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-color)' }}>
             <PanelHeader title="MISSION TIMER" sub={isLive ? 'FLIGHT TIME' : 'STANDBY'} />
             <div style={{ padding: '8px', textAlign: 'center' }}>
-                {/* T+ display */}
                 <div className="classic-inset" style={{
                     fontFamily: 'var(--font-mono)',
                     fontSize: '24px',
@@ -138,24 +135,21 @@ export const MissionClock = ({ timestamp }) => {
                         borderLeft: '2px solid',
                         borderRight: '2px solid',
                         borderBottom: '2px solid',
-                        borderColor: isLive ? 'var(--border-darkest) var(--border-light) var(--border-light) var(--border-darkest)' : 'var(--border-dark)',
+                        borderColor: isLive
+                            ? 'var(--border-darkest) var(--border-light) var(--border-light) var(--border-darkest)'
+                            : 'var(--border-dark)',
                     }}>
                         {isLive ? 'FLIGHT ACTIVE' : 'AWAITING LAUNCH'}
                     </span>
                 </div>
-
-                {/* UTC time sub-display */}
-                <div style={{
-                    marginTop: '8px',
-                    fontFamily: 'var(--font-mono)',
-                    color: '#000000'
-                }}>
+                <div style={{ marginTop: '8px', fontFamily: 'var(--font-mono)', color: '#000000' }}>
                     {new Date().toUTCString().slice(5, 25)} UTC
                 </div>
             </div>
         </div>
     );
 };
+
 
 // ─── 3. Peak / Max Altitude ───────────────────────────────────────────────────
 export const MaxAltitude = ({ gpsAlt, bmpAlt }) => {

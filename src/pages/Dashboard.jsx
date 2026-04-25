@@ -125,28 +125,11 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
 
     const { packet, history, isConnected } = useTelemetry();
     const [currentView, setCurrentView] = useState('dashboard');
-    const [watchdogStatus, setWatchdogStatus] = useState({ active: false, timeSinceLastData: 0 });
     const [menuOpen, setMenuOpen] = useState(false);
 
     const toggleMenu = useCallback(() => setMenuOpen(prev => !prev), []);
     const closeMenu = useCallback(() => setMenuOpen(false), []);
     const handleMenuSelect = useCallback((viewId) => { setCurrentView(viewId); setMenuOpen(false); }, []);
-
-    // Fetch watchdog status
-    useEffect(() => {
-        const fetchWatchdog = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/api/ignition/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.watchdog) setWatchdogStatus(data.watchdog);
-                }
-            } catch (_) { }
-        };
-        fetchWatchdog();
-        const interval = setInterval(fetchWatchdog, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
     // Live data helpers
     const gpsAlt = packet?.gps?.altitude_m ?? 0;
@@ -175,22 +158,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
             padding: '4px'
         }}>
 
-            {/* Watchdog Banner */}
-            {watchdogStatus.active && (
-                <div style={{
-                    background: '#fee2e2',
-                    color: '#991b1b',
-                    borderBottom: '1px solid #f87171',
-                    padding: '0.4rem 1rem',
-                    textAlign: 'center',
-                    fontSize: '0.8rem',
-                    fontWeight: '600',
-                    zIndex: 1000,
-                    flexShrink: 0
-                }}>
-                    ⚠ Warning — No Telemetry Data Received for {Math.floor(watchdogStatus.timeSinceLastData / 1000)} seconds ⚠
-                </div>
-            )}
+
 
             <HeaderBar
                 isConnected={isConnected}

@@ -50,18 +50,6 @@ export const TelemetryProvider = ({ children }) => {
     const getHistory = useCallback(() => historyRef.current, []);
 
     useEffect(() => {
-        // Connection polling (only until first packet)
-        const originalConnect = telemetryService.connect.bind(telemetryService);
-        telemetryService.connect = () => {
-            originalConnect();
-            const checkConn = setInterval(() => {
-                if (telemetryService.socket?.readyState === WebSocket.OPEN) {
-                    setLiveState(prev => prev.isConnected ? prev : { ...prev, isConnected: true });
-                    clearInterval(checkConn);
-                }
-            }, 100);
-        };
-
         telemetryService.connect();
 
         const unsubscribe = telemetryService.subscribe((data) => {

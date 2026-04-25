@@ -1,57 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import './IgnitionPanel.css';
 
-const IgnitionStatusDisplay = () => {
-    const [ignitionStatus, setIgnitionStatus] = useState(false);
-    const [launchTime, setLaunchTime] = useState(null);
+/**
+ * IgnitionStatusDisplay — Read-only view of ignition state.
+ * Accepts `ignitionOn` and `launchTime` as props from a parent that
+ * manages state, OR runs standalone using local state.
+ * No backend server required.
+ */
+const IgnitionStatusDisplay = ({ ignitionOn = false, launchTime = null, activityLog = [] }) => {
     const [currentTime, setCurrentTime] = useState(Date.now());
-    const [activityLog, setActivityLog] = useState([]);
 
-    // Fetch ignition status from backend
+    // Update current time every 100ms for smooth clock
     useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/api/ignition/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    setIgnitionStatus(data.ignitionOn);
-                    setLaunchTime(data.launchTime);
-                    setActivityLog(data.activityLog || []);
-                }
-            } catch (error) {
-                console.error('Error fetching ignition status:', error);
-            }
-        };
-
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 1000); // Update every second
-
-        return () => clearInterval(interval);
-    }, []);
-
-    // Update current time every 100ms for smooth countdown
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentTime(Date.now());
-        }, 100);
-
+        const timer = setInterval(() => setCurrentTime(Date.now()), 100);
         return () => clearInterval(timer);
     }, []);
 
-    // Calculate time difference
     const getTimeDifference = () => {
-        if (!launchTime) return { display: 'T+ --:--:--', isMinus: false };
-
+        if (!launchTime) return { display: 'T+ --:--:--' };
         const diff = currentTime - launchTime;
         const absDiff = Math.abs(diff);
-
         const hours = Math.floor(absDiff / 3600000);
         const minutes = Math.floor((absDiff % 3600000) / 60000);
         const seconds = Math.floor((absDiff % 60000) / 1000);
-
         const display = `T+ ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-
-        return { display, isMinus: false };
+        return { display };
     };
 
     const { display } = getTimeDifference();
@@ -73,15 +46,15 @@ const IgnitionStatusDisplay = () => {
             {/* Status Indicator */}
             <div className="status-section">
                 <div className="status-label" style={{ fontWeight: 'bold', marginBottom: '4px' }}>IGNITION STATUS</div>
-                <div className={`classic-inset status-indicator status-${ignitionStatus ? 'ignited' : 'safe'}`}>
+                <div className={`classic-inset status-indicator status-${ignitionOn ? 'ignited' : 'safe'}`}>
                     <div className="status-light"></div>
-                    <span className="status-text">{ignitionStatus ? 'IGNITED' : 'SAFE'}</span>
+                    <span className="status-text">{ignitionOn ? 'IGNITED' : 'SAFE'}</span>
                 </div>
             </div>
 
             {/* Mission Clock */}
             <div className="countdown-section" style={{ margin: '8px 0', textAlign: 'center' }}>
-                <div className="classic-inset countdown-display" style={{ background: '#000000', color: ignitionStatus ? '#00ff00' : '#808080', padding: '8px' }}>
+                <div className="classic-inset countdown-display" style={{ background: '#000000', color: ignitionOn ? '#00ff00' : '#808080', padding: '8px' }}>
                     <div className="countdown-label" style={{ fontSize: '10px', color: '#c0c0c0', marginBottom: '4px' }}>MISSION CLOCK</div>
                     <div className="countdown-time" style={{ fontSize: '24px', fontFamily: 'var(--font-mono)', fontWeight: 'bold' }}>
                         {display}

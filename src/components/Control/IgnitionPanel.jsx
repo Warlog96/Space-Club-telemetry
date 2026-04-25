@@ -3,80 +3,53 @@ import './IgnitionPanel.css';
 
 const IgnitionPanel = () => {
     const [ignitionOn, setIgnitionOn] = useState(false);
+    const [launchTime, setLaunchTime] = useState(null);
     const [missionTime, setMissionTime] = useState(0);
     const [activityLog, setActivityLog] = useState([]);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [loading, setLoading] = useState(false);
 
     // Update real-time clock every second
     useEffect(() => {
         const timer = setInterval(() => {
             setCurrentTime(new Date());
+            if (launchTime) setMissionTime(Date.now() - launchTime);
         }, 1000);
         return () => clearInterval(timer);
-    }, []);
+    }, [launchTime]);
 
-    // Fetch ignition status
-    useEffect(() => {
-        const fetchStatus = async () => {
-            try {
-                const response = await fetch('http://localhost:3001/api/ignition/status');
-                if (response.ok) {
-                    const data = await response.json();
-                    setIgnitionOn(data.ignitionOn);
-                    setMissionTime(data.missionElapsedTime || 0);
-                    setActivityLog(data.activityLog || []);
-                }
-            } catch (error) {
-                console.error('Error fetching ignition status:', error);
-            }
+    const handleIgnitionToggle = () => {
+        const newState = !ignitionOn;
+        setIgnitionOn(newState);
+
+        const newEntry = {
+            timestamp: Date.now(),
+            event: newState ? 'IGNITION ACTIVATED' : 'IGNITION DEACTIVATED',
+            username: 'Admin'
         };
+        setActivityLog(prev => [...prev, newEntry]);
 
-        fetchStatus();
-        const interval = setInterval(fetchStatus, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleIgnitionToggle = async () => {
-        setLoading(true);
-        try {
-            const response = await fetch('http://localhost:3001/api/ignition/trigger', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ ignite: !ignitionOn })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Ignition toggle:', data.message);
-            } else {
-                const errorData = await response.json();
-                console.error('Failed to toggle ignition:', errorData);
-                alert(`Failed to toggle ignition: ${errorData.error || 'Unknown error'}`);
-            }
-        } catch (error) {
-            console.error('Error toggling ignition:', error);
-            alert('Network error: Could not connect to server');
-        } finally {
-            setLoading(false);
+        if (newState) {
+            setLaunchTime(Date.now());
+            setMissionTime(0);
+        } else {
+            setLaunchTime(null);
+            setMissionTime(0);
         }
     };
 
-    const downloadIgnitionLog = async () => {
-        try {
-            const response = await fetch('http://localhost:3001/api/ignition/log/download');
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `ignition_log_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Error downloading ignition log:', error);
-        }
+    const downloadIgnitionLog = () => {
+        if (activityLog.length === 0) return;
+        const header = 'Timestamp,Event,User\n';
+        const rows = activityLog.map(e =>
+            `${new Date(e.timestamp).toISOString()},${e.event},${e.username}`
+        ).join('\n');
+        const blob = new Blob([header + rows], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `ignition_log_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     const formatTime = (milliseconds) => {
@@ -107,16 +80,22 @@ const IgnitionPanel = () => {
                 </div>
             </div>
 
+            {/* Mission Clock */}
+            {launchTime && (
+                <div style={{ textAlign: 'center', padding: '4px', fontFamily: 'var(--font-mono)', fontSize: '14px', color: '#00ff00' }}>
+                    T+ {formatTime(missionTime)}
+                </div>
+            )}
+
             {/* Main Ignition Button */}
             <div className="ignition-button-section">
                 <button
                     className={`ignition-button ${ignitionOn ? 'on' : 'off'}`}
                     onClick={handleIgnitionToggle}
-                    disabled={loading}
                 >
                     <div className="button-icon">🚀</div>
                     <div className="button-text">
-                        {loading ? 'PROCESSING...' : (ignitionOn ? 'IGNITION ON' : 'IGNITION OFF')}
+                        {ignitionOn ? 'IGNITION ON' : 'IGNITION OFF'}
                     </div>
                     <div className="button-subtext">
                         {ignitionOn ? 'Click to turn OFF' : 'Click to IGNITE'}
