@@ -74,23 +74,11 @@ const LoadingFallback = () => (
 // GLB Rocket Model — uses useGLTF hook at component level (valid), mutates via useFrame (no re-render)
 function RealisticRocket({ pitch, roll, yaw }) {
     const groupRef = useRef();
-    let scene;
-    try {
-        const gltf = useGLTF('/models/rocket.glb');
-        scene = gltf.scene;
-    } catch (e) {
-        console.error('[RealisticRocket] Failed to load GLB:', e);
-        throw e; // let ErrorBoundary catch it
-    }
+    const { scene } = useGLTF('/models/rocket.glb');
 
     // useFrame mutates the ref directly — zero React re-render cost at 60fps
     useFrame(() => {
         if (groupRef.current) {
-            // pitch/roll/yaw arrive in radians (converted in Scene below).
-            // Server now uses Z-up body frame (vertical rocket convention):
-            //   pitch = nose tilt from vertical  →  rotation.x in Three.js
-            //   roll  = spin about long axis      →  rotation.z in Three.js
-            //   yaw   = heading                   →  rotation.y in Three.js
             groupRef.current.rotation.x = pitch;
             groupRef.current.rotation.y = yaw;
             groupRef.current.rotation.z = roll;
@@ -105,6 +93,7 @@ function RealisticRocket({ pitch, roll, yaw }) {
         </group>
     );
 }
+
 
 // 6-Axis Coordinate System — static, never changes: memoize completely
 const CoordinateAxes = React.memo(() => {
