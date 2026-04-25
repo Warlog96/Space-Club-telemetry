@@ -66,7 +66,7 @@ void setup() {
   radio.setPreambleLength(8);
   radio.setCRC(true);
 
-  Serial.println("Ground Station Ready! Send this terminal to the Serial Bridge.");
+  Serial.println("Ground Station Ready! Pushing telemetry directly to Firebase.");
 }
 
 void loop() {
