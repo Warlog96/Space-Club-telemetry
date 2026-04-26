@@ -263,12 +263,10 @@ export const RawLog = ({ data }) => {
     }, [data]);
 
 
-    // Auto-scroll only within the log container — never moves the page
+    // Robust auto-scroll to bottom of log lines
+    const messagesEndRef = useRef(null);
     useEffect(() => {
-        const container = logContainerRef.current;
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-        }
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
     }, [logLines]);
 
     return (
@@ -303,6 +301,7 @@ export const RawLog = ({ data }) => {
                         </div>
                     ))
                 )}
+                <div ref={messagesEndRef} />
             </div>
         </div>
     );
