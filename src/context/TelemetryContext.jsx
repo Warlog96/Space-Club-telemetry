@@ -3,7 +3,7 @@ import { telemetryService } from '../services/TelemetryService';
 
 const TelemetryContext = createContext();
 
-const HISTORY_SIZE = 500; // larger buffer, zero cost since it's a Ref
+const HISTORY_SIZE = 5000; // expanded buffer to store entire flight history instead of dropping it
 
 const getMockTelemetryData = () => ({
     mission: "EKLAVYA-DEMO",

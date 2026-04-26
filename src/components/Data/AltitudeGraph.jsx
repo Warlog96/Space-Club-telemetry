@@ -195,6 +195,7 @@ const AltitudeGraph = ({ history }) => {
                                 stroke="#00ff00" strokeWidth={1.5}
                                 fill="url(#altGpsGrad)"
                                 dot={false}
+                                isAnimationActive={false}
                                 activeDot={{ r: 3, fill: '#00ff00', stroke: '#ffffff', strokeWidth: 1 }}
                                 connectNulls={false}
                             />
@@ -203,6 +204,7 @@ const AltitudeGraph = ({ history }) => {
                                 stroke="#ff9900" strokeWidth={1.5}
                                 fill="url(#altBaroGrad)"
                                 dot={false}
+                                isAnimationActive={false}
                                 activeDot={{ r: 3, fill: '#ff9900', stroke: '#ffffff', strokeWidth: 1 }}
                                 connectNulls={false}
                             />

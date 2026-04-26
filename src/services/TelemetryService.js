@@ -102,7 +102,7 @@ class TelemetryService {
 
     console.log('[TelemetryService] Connecting to Firebase...');
 
-    const latestQuery = query(ref(db, 'telemetry'), limitToLast(500));
+    const latestQuery = query(ref(db, 'telemetry'), limitToLast(5000));
 
     // onChildAdded fires for all existing records (up to 500) upon load,
     // and then sequentially for every new record without fetching the entire block again.
