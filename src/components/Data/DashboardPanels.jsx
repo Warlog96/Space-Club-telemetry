@@ -227,6 +227,10 @@ export const RawLog = ({ data }) => {
         const ax = data?.imu?.acceleration?.x_mps2?.toFixed(2) ?? '0.00';
         const ay = data?.imu?.acceleration?.y_mps2?.toFixed(2) ?? '0.00';
         const az = data?.imu?.acceleration?.z_mps2?.toFixed(2) ?? '0.00';
+        // Raw gyro
+        const gx = data?.imu?.gyroscope?.x_rps?.toFixed(2) ?? '0.00';
+        const gy = data?.imu?.gyroscope?.y_rps?.toFixed(2) ?? '0.00';
+        const gz = data?.imu?.gyroscope?.z_rps?.toFixed(2) ?? '0.00';
 
         // BMP280
         const bmpAlt  = data?.bmp280?.altitude_m?.toFixed(1) ?? '0.0';
@@ -248,6 +252,7 @@ export const RawLog = ({ data }) => {
             `GPS:${gpsLat},${gpsLon} Alt:${gpsAlt}m ${gpsOk}`,
             `| IMU P:${pitch} R:${roll} Y:${yaw}`,
             `| Accel X:${ax} Y:${ay} Z:${az} m/s²`,
+            `| Gyro X:${gx} Y:${gy} Z:${gz} rad/s`,
             `| BARO:${bmpAlt}m ${bmpTemp}°C ${bmpPres}hPa`,
             `| THR:${thermo}°C STR1:${strain1} STR2:${strain2}`,
             `| RF:${rssi}dBm SNR:${snr}dB`,
