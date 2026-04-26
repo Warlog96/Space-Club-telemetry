@@ -77,11 +77,13 @@ function RealisticRocket({ pitch, roll, yaw }) {
     const { scene } = useGLTF('/models/rocket.glb');
 
     // useFrame mutates the ref directly — zero React re-render cost at 60fps
-    useFrame(() => {
+    useFrame((state, delta) => {
         if (groupRef.current) {
-            groupRef.current.rotation.x = pitch;
-            groupRef.current.rotation.y = yaw;
-            groupRef.current.rotation.z = roll;
+            // Apply Linear Interpolation (LERP) to gracefully glide between network batched frames.
+            // This totally hides any 3 Hz Firebase stuttering, making it look incredibly smooth!
+            groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, pitch, delta * 12.0);
+            groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, yaw, delta * 12.0);
+            groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, roll, delta * 12.0);
         }
     });
 

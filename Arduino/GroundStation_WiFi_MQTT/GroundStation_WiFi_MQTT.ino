@@ -46,85 +46,105 @@ QueueHandle_t telemetryQueue;
 // This task runs strictly on Core 0 and handles all internet connections
 // in the background. It prevents HTTP timeouts from killing LoRa reception.
 void firebaseUploadTask(void *pvParameters) {
-  QueueItem item;
   while (true) {
-    // Wait until a packet is pushed into the queue (blocks cleanly to save CPU)
+    QueueItem item;
+    // Wait until at least one packet arrives
     if (xQueueReceive(telemetryQueue, &item, portMAX_DELAY) == pdPASS) {
       
-      uint16_t pktCount = item.pkt.packetCount;
-      double lat = item.pkt.lat / 1e6;
-      double lng = item.pkt.lng / 1e6;
-      float gpsAlt = (float)item.pkt.gpsAlt;
-      float ax = item.pkt.ax / 100.0f;
-      float ay = item.pkt.ay / 100.0f;
-      float az = item.pkt.az / 100.0f;
-      float gx = item.pkt.gx / 100.0f;
-      float gy = item.pkt.gy / 100.0f;
-      float gz = item.pkt.gz / 100.0f;
-      float temperature = item.pkt.temperature / 100.0f;
-      float pressure = (float)item.pkt.pressure;
-      float bmpAlt = (float)item.pkt.bmpAlt;
-      
-      // Load STR1 and STR2 properly
-      float strain1 = item.pkt.strain1 / 100.0f;
-      float strain2 = item.pkt.strain2 / 100.0f;
-      float thermo = item.pkt.thermo / 100.0f;
+      // We got one! Now quickly wait 300ms to allow the queue to fill up with the rest of the burst
+      vTaskDelay(pdMS_TO_TICKS(300)); 
 
-      // Construct perfectly formatted JSON
       String json = "{";
-      json += "\"version\":\"1.0\",";
-      json += "\"mission\":\"EKLAVYA_LIVE\",";
-      json += "\"timestamp_ms\":" + String(item.timestamp) + ",";
-      json += "\"packet\":{\"count\":" + String(pktCount) + ",\"phase\":\"FLIGHT\"},";
+      int batchCount = 0;
+      
+      // Process the first packet and ALL other packets currently waiting in the queue
+      bool morePackets = true;
+      while (morePackets) {
+        uint16_t pktCount = item.pkt.packetCount;
+        double lat = item.pkt.lat / 1e6;
+        double lng = item.pkt.lng / 1e6;
+        float gpsAlt = (float)item.pkt.gpsAlt;
+        float ax = item.pkt.ax / 100.0f;
+        float ay = item.pkt.ay / 100.0f;
+        float az = item.pkt.az / 100.0f;
+        float gx = item.pkt.gx / 100.0f;
+        float gy = item.pkt.gy / 100.0f;
+        float gz = item.pkt.gz / 100.0f;
+        float temperature = item.pkt.temperature / 100.0f;
+        float pressure = (float)item.pkt.pressure;
+        float bmpAlt = (float)item.pkt.bmpAlt;
+        
+        float strain1 = item.pkt.strain1 / 100.0f;
+        float strain2 = item.pkt.strain2 / 100.0f;
+        float thermo = item.pkt.thermo / 100.0f;
 
-      json += "\"gps\":{";
-      json += "\"latitude\":"  + String(lat, 6) + ",";
-      json += "\"longitude\":" + String(lng, 6) + ",";
-      json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
-      json += "\"valid\":true,";
-      json += "\"satellites\":8},";
+        if (batchCount > 0) json += ",";
+        
+        // We use the timestamp + packetCount as a unique Firebase Push-Key equivalent
+        json += "\"" + String(item.timestamp) + "_" + String(pktCount) + "\":{";
+        json += "\"version\":\"1.0\",";
+        json += "\"mission\":\"EKLAVYA_LIVE\",";
+        json += "\"timestamp_ms\":" + String(item.timestamp) + ",";
+        json += "\"packet\":{\"count\":" + String(pktCount) + ",\"phase\":\"FLIGHT\"},";
 
-      json += "\"imu\":{";
-      json += "\"acceleration\":{";
-      json += "\"x_mps2\":" + String(ax, 2) + ",";
-      json += "\"y_mps2\":" + String(ay, 2) + ",";
-      json += "\"z_mps2\":" + String(az, 2) + "},";
-      json += "\"gyroscope\":{";
-      json += "\"x_rps\":" + String(gx, 3) + ",";
-      json += "\"y_rps\":" + String(gy, 3) + ",";
-      json += "\"z_rps\":" + String(gz, 3) + "},";
-      json += "\"calibrated\":true},";
+        json += "\"gps\":{";
+        json += "\"latitude\":"  + String(lat, 6) + ",";
+        json += "\"longitude\":" + String(lng, 6) + ",";
+        json += "\"altitude_m\":" + String(gpsAlt, 2) + ",";
+        json += "\"valid\":true,";
+        json += "\"satellites\":8},";
 
-      json += "\"bmp280\":{";
-      json += "\"temperature_c\":" + String(temperature, 2) + ",";
-      json += "\"pressure_hpa\":" + String(pressure, 2) + ",";
-      json += "\"altitude_m\":"   + String(bmpAlt, 2) + ",";
-      json += "\"calibrated\":true},";
+        json += "\"imu\":{";
+        json += "\"acceleration\":{";
+        json += "\"x_mps2\":" + String(ax, 2) + ",";
+        json += "\"y_mps2\":" + String(ay, 2) + ",";
+        json += "\"z_mps2\":" + String(az, 2) + "},";
+        json += "\"gyroscope\":{";
+        json += "\"x_rps\":" + String(gx, 3) + ",";
+        json += "\"y_rps\":" + String(gy, 3) + ",";
+        json += "\"z_rps\":" + String(gz, 3) + "},";
+        json += "\"calibrated\":true},";
 
-      // Fixed syntax crash here:
-      json += "\"structure\":{";
-      json += "\"strain_microstrain1\":" + String(strain1, 4) + ",";
-      json += "\"strain_microstrain2\":" + String(strain2, 4) + ",";
-      json += "\"thermocouple_c\":"      + String(thermo, 2) + "},";
+        json += "\"bmp280\":{";
+        json += "\"temperature_c\":" + String(temperature, 2) + ",";
+        json += "\"pressure_hpa\":" + String(pressure, 2) + ",";
+        json += "\"altitude_m\":"   + String(bmpAlt, 2) + ",";
+        json += "\"calibrated\":true},";
 
-      json += "\"radio\":{";
-      json += "\"rssi_dbm\":" + String(item.rssi, 1) + ",";
-      json += "\"snr_db\":"+   String(item.snr, 1) + "}";
-      json += "}";
+        json += "\"structure\":{";
+        json += "\"strain_microstrain1\":" + String(strain1, 4) + ",";
+        json += "\"strain_microstrain2\":" + String(strain2, 4) + ",";
+        json += "\"thermocouple_c\":"      + String(thermo, 2) + "},";
+
+        json += "\"radio\":{";
+        json += "\"rssi_dbm\":" + String(item.rssi, 1) + ",";
+        json += "\"snr_db\":"+   String(item.snr, 1) + "}";
+        json += "}";
+        
+        batchCount++;
+        
+        // Grab the next item from the queue instantly (timeout 0)
+        if (xQueueReceive(telemetryQueue, &item, 0) != pdPASS) {
+          morePackets = false;
+        }
+      }
+      
+      json += "}"; // End the master patch object
 
       if (WiFi.status() == WL_CONNECTED) {
         digitalWrite(LED, HIGH);
         HTTPClient http;
-        String postUrl = FIREBASE_URL + ".json";
-        http.begin(postUrl);
+        String patchUrl = FIREBASE_URL + ".json"; 
+        http.begin(patchUrl);
         http.addHeader("Content-Type", "application/json");
-        int httpResponseCode = http.POST(json); // Use POST for automatic chronological Firebase entries
+        
+        // Use PATCH to bulk-upload ALL 8-15 packets simultaneously in one single WiFi transaction!
+        int httpResponseCode = http.PATCH(json); 
         
         if (httpResponseCode > 0) {
-          Serial.print("Firebase OK! [Pending queue: ");
-          Serial.print(uxQueueMessagesWaiting(telemetryQueue)); // Show queue length
-          Serial.print("] Packet #");
-          Serial.println(pktCount);
+          Serial.print("Firebase OK (+");
+          Serial.print(batchCount);
+          Serial.println(" packets batch uploaded!)");
         } else {
           Serial.print("Firebase ERR: ");
           Serial.println(httpResponseCode);
@@ -211,20 +231,12 @@ void loop() {
     newItem.rssi = radio.getRSSI();
     newItem.snr = radio.getSNR();
 
-    // DOWN-SAMPLER: Your transmitter is running at an incredibly high 30Hz! 
-    // WiFi and Firebase physically cannot upload 30 HTTP payloads per second.
-    // We will perfectly sample it at 10 Frames-Per-Second to keep it real-time and stable.
-    static unsigned long lastQueueTime = 0;
-    if (millis() - lastQueueTime >= 100) { 
-      if (xQueueSend(telemetryQueue, &newItem, 0) != errQUEUE_FULL) {
-        lastQueueTime = millis();
-      } else {
-        // If WiFi lags momentarily, purge the oldest data in queue to stay real-time!
-        QueueItem dummy;
-        xQueueReceive(telemetryQueue, &dummy, 0); 
-        xQueueSend(telemetryQueue, &newItem, 0);
-        lastQueueTime = millis();
-      }
+    // BATCH COLLECTOR: Since WiFi HTTP calls take 300ms, we just dump EVERY packet
+    // into the queue as fast as they arrive (0 delay restrictions).
+    // The Core 0 task will scoop up all 10-20 packets waiting in line every 300ms
+    // and upload them synchronously in a single MASSIVE transaction to Firebase!
+    if (xQueueSend(telemetryQueue, &newItem, 0) == errQUEUE_FULL) {
+      Serial.println("Warning: Insane Burst! Queue max capacity reached. Dropping packet.");
     }
 
   } else if (state != RADIOLIB_ERR_RX_TIMEOUT) {
