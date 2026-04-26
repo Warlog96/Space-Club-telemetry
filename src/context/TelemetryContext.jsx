@@ -57,6 +57,13 @@ export const TelemetryProvider = ({ children }) => {
         // If connect() runs before subscribe(), that first emit() hits an empty
         // subscriber list and the packet is silently lost.
         const unsubscribe = telemetryService.subscribe((data) => {
+            if (data && data.command === "RESET_SESSION") {
+                historyRef.current = [getMockTelemetryData()];
+                setLiveState({ packet: getMockTelemetryData(), isConnected: false });
+                setHistoryVersion(v => v + 1);
+                return;
+            }
+
             // Drop the mock packet instantly upon receiving real payload
             if (historyRef.current.length === 1 && historyRef.current[0].isMock) {
                 historyRef.current = [];

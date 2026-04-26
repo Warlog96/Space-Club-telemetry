@@ -54,6 +54,12 @@ export const SystemStatus = ({ data }) => {
 
                 {/* Divider */}
                 <div style={{ margin: '4px 0', height: '2px', borderTop: '1px solid var(--border-dark)', borderBottom: '1px solid var(--border-light)' }} />
+                
+                <StatusRow label="Strain Force Node 1" isActive={data?.structure?.strain_microstrain1 !== undefined} detail={data?.structure?.strain_microstrain1 !== undefined ? `${data?.structure?.strain_microstrain1?.toFixed(4)} μɛ` : null} />
+                <StatusRow label="Strain Force Node 2" isActive={data?.structure?.strain_microstrain2 !== undefined} detail={data?.structure?.strain_microstrain2 !== undefined ? `${data?.structure?.strain_microstrain2?.toFixed(4)} μɛ` : null} />
+
+                {/* Divider */}
+                <div style={{ margin: '4px 0', height: '2px', borderTop: '1px solid var(--border-dark)', borderBottom: '1px solid var(--border-light)' }} />
 
                 {/* Quick telemetry stats */}
                 {[

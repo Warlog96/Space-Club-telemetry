@@ -191,6 +191,27 @@ void setup() {
   }
   Serial.println("\nWiFi Connected!");
 
+  // Establish Session Sequence independently for Firebase
+  HTTPClient http;
+  http.begin("https://test-d0075-default-rtdb.firebaseio.com/settings/current_session.json");
+  int code = http.GET();
+  int sessionNum = 1;
+  if (code > 0) {
+    String payload = http.getString();
+    if (payload != "null") sessionNum = payload.toInt() + 1;
+  }
+  http.end();
+
+  http.begin("https://test-d0075-default-rtdb.firebaseio.com/settings/current_session.json");
+  http.addHeader("Content-Type", "application/json");
+  http.PUT(String(sessionNum));
+  http.end();
+
+  // Route everything in this boot sequence to a completely fresh directory
+  FIREBASE_URL = "https://test-d0075-default-rtdb.firebaseio.com/sessions/session_" + String(sessionNum) + "/telemetry/";
+  Serial.print("Firebase Route Locked: SESSION ");
+  Serial.println(sessionNum);
+
   int state = radio.begin();
   if (state != RADIOLIB_ERR_NONE) {
     Serial.print("LoRa init failed: ");

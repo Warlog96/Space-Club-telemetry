@@ -10,7 +10,7 @@
  */
 
 import { db } from './firebaseConfig';
-import { ref, query, limitToLast, onChildAdded } from 'firebase/database';
+import { ref, query, limitToLast, onChildAdded, onValue } from 'firebase/database';
 
 const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
 function pushIdToTimestamp(id) {
@@ -102,19 +102,41 @@ class TelemetryService {
   constructor() {
     this.subscribers  = [];
     this.isConnected  = false;
-    this._unsub       = null;
+    this._unsubLog    = null;
+    this._unsubSession = null;
     this._lastKey     = null;
     this._lastEmitted = null;
+    this.currentSession = 1;
   }
 
   connect() {
-    if (this._unsub) return; // already connected
+    if (this._unsubSession) return;
 
-    console.log('[TelemetryService] Connecting to Firebase...');
+    console.log('[TelemetryService] Connecting to Firebase Session Manager...');
+    
+    const sessionRef = ref(db, 'settings/current_session');
+    this._unsubSession = onValue(sessionRef, (snapshot) => {
+      const sessionNum = snapshot.val() || 1;
+      this.currentSession = sessionNum;
+      this.switchSessionLink();
+    });
+  }
 
-    const latestQuery = query(ref(db, 'telemetry'), limitToLast(5000));
+  switchSessionLink() {
+    if (this._unsubLog) {
+      this._unsubLog();
+      this._lastKey = null;
+    }
 
-    this._unsub = onChildAdded(latestQuery, (childSnapshot) => {
+    // Force context to wipe old traces visually
+    this.emit({ command: "RESET_SESSION" });
+    this._lastEmitted = null;
+    this.isConnected = false;
+
+    console.log(`[TelemetryService] Listening to /sessions/session_${this.currentSession}/telemetry`);
+    const latestQuery = query(ref(db, `sessions/session_${this.currentSession}/telemetry`), limitToLast(5000));
+
+    this._unsubLog = onChildAdded(latestQuery, (childSnapshot) => {
       const key = childSnapshot.key;
       let pkt = childSnapshot.val();
 
@@ -173,9 +195,13 @@ class TelemetryService {
   }
 
   disconnect() {
-    if (this._unsub) {
-      this._unsub();
-      this._unsub = null;
+    if (this._unsubLog) {
+      this._unsubLog();
+      this._unsubLog = null;
+    }
+    if (this._unsubSession) {
+      this._unsubSession();
+      this._unsubSession = null;
     }
     this.isConnected = false;
     this._lastKey = null;
