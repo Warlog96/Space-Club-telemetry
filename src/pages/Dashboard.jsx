@@ -101,8 +101,8 @@ const HeaderBar = React.memo(({ isConnected, pktCount, isPublicView, commanderNa
                 />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingRight: '4px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div className="header-status-bar" style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingRight: '4px' }}>
+                <div className="header-status-com" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <div className="classic-inset" style={{
                         width: '12px', height: '12px',
                         background: isConnected ? '#00ff00' : '#ffff00',
@@ -159,7 +159,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
             background: 'var(--bg-color)',
             fontFamily: 'var(--font-main)',
             position: 'relative',
-            overflow: 'hidden',
+            overflowX: 'hidden', overflowY: 'auto',
             padding: '4px'
         }}>
 
@@ -180,22 +180,9 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
 
             {/* ══ MAIN DASHBOARD VIEW ══ */}
             {currentView === 'dashboard' && (
-                <div style={{
-                    flex: 1,
-                    display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr) 300px',
-                    gridTemplateRows: '1fr 250px',
-                    gap: '8px',
-                    padding: '8px',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    zIndex: 1
-                }}>
+                <div className="dashboard-grid">
 
-                    <div className="classic-outset" style={{
-                        gridColumn: '1', gridRow: '1',
-                        display: 'flex', flexDirection: 'column',
-                    }}>
+                    <div className="classic-outset dashboard-item-3d">
                         <SectionLabel title="Orientation View" sub="3D" />
                         <div style={{ display: 'flex', gap: '2px', padding: '2px', background: 'var(--bg-color)' }}>
                             <TeleBadge label="PITCH" value={pitch} unit="°" />
@@ -208,10 +195,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                     </div>
 
                     {/* ── COL 2: GPS Map ───────────────────────────────────── */}
-                    <div className="classic-outset" style={{
-                        gridColumn: '2', gridRow: '1',
-                        display: 'flex', flexDirection: 'column',
-                    }}>
+                    <div className="classic-outset dashboard-item-map">
                         <SectionLabel title="Trajectory Map" sub={gpsFix ? '3D' : 'None'} />
                         <div style={{ display: 'flex', gap: '2px', padding: '2px', background: 'var(--bg-color)' }}>
                             <TeleBadge label="LAT" value={gpsLat} />
@@ -224,12 +208,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                     </div>
 
                     {/* ── COL 3: Right sidebar ─────────────────────────────── */}
-                    <div style={{
-                        gridColumn: '3', gridRow: '1 / 3',
-                        display: 'flex', flexDirection: 'column',
-                        gap: '4px',
-                        overflowY: 'auto'
-                    }}>
+                    <div className="dashboard-item-sidebar">
                         {/* Mission Clock Panel */}
                         <div className="classic-outset" style={{ flexShrink: 0 }}>
                             <MissionClock timestamp={packet.timestamp_ms} />
@@ -318,10 +297,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
 
                     {/* ── BOTTOM ROW: Altitude Graph + Raw Log ─────────────── */}
                     {/* Altitude vs Time Graph */}
-                    <div className="classic-outset" style={{
-                        gridColumn: '1', gridRow: '2',
-                        display: 'flex', flexDirection: 'column'
-                    }}>
+                    <div className="classic-outset dashboard-item-chart">
                         <SectionLabel title="Chart" sub="Alt" />
                         <div className="classic-inset" style={{ flex: 1 }}>
                             <AltitudeGraph history={history} />
@@ -329,10 +305,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                     </div>
 
                     {/* Serial / Raw Log */}
-                    <div className="classic-outset" style={{
-                        gridColumn: '2', gridRow: '2',
-                        display: 'flex', flexDirection: 'column'
-                    }}>
+                    <div className="classic-outset dashboard-item-serial">
                         <SectionLabel title="Serial Console" />
                         <div className="classic-inset" style={{ flex: 1 }}>
                             <RawLog data={packet} />
