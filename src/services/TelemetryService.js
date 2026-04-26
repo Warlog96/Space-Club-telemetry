@@ -27,7 +27,7 @@ const orientationState = {
   pitch: 0, roll: 0, yaw: 0,
   lastTimestamp: 0,
   calibrated: false,
-  pitchOffset: 0, rollOffset: 0
+  pitchOffset: 0, yawOffset: 0
 };
 
 function calculateOrientation(imu, timestamp) {
@@ -46,29 +46,42 @@ function calculateOrientation(imu, timestamp) {
   const ay = imu.acceleration.y_mps2 || 0;
   const az = imu.acceleration.z_mps2 || 0;
 
+  const uncalibratedGX = (imu.gyroscope?.x_rps || 0) * (180 / Math.PI);
+  const uncalibratedGY = (imu.gyroscope?.y_rps || 0) * (180 / Math.PI);
+  const uncalibratedGZ = (imu.gyroscope?.z_rps || 0) * (180 / Math.PI);
+
+  // Apply Deadband filter to prevent "rigorous rotating at rest"
+  const gyroX = Math.abs(uncalibratedGX) > 1.5 ? uncalibratedGX : 0;
+  const gyroY = Math.abs(uncalibratedGY) > 1.5 ? uncalibratedGY : 0;
+  const gyroZ = Math.abs(uncalibratedGZ) > 1.5 ? uncalibratedGZ : 0;
+
+  // Assuming X points Up (Resting Gravity on X)
+  // Pitch is rotation about Y. Gravity tilts into Z.
   const accelPitch = Math.atan2(az, -ax) * (180 / Math.PI);
-  const accelRoll  = Math.atan2(ay, -ax) * (180 / Math.PI);
+  // Yaw is rotation about Z. Gravity tilts into Y.
+  const accelYaw   = Math.atan2(ay, -ax) * (180 / Math.PI);
+  // Roll is rotation about X (Spin). Gravity projection does NOT change. Cannot be tracked via accel!
 
   const accelMag = Math.sqrt(ax * ax + ay * ay + az * az);
 
   if (!orientationState.calibrated && accelMag > 8) {
     orientationState.pitchOffset = accelPitch;
-    orientationState.rollOffset  = accelRoll;
+    orientationState.yawOffset   = accelYaw;
     orientationState.pitch = 0;
     orientationState.roll  = 0;
     orientationState.yaw   = 0;
     orientationState.calibrated = true;
   }
 
-  const gyroX = (imu.gyroscope?.x_rps || 0) * (180 / Math.PI);
-  const gyroY = (imu.gyroscope?.y_rps || 0) * (180 / Math.PI);
-  const gyroZ = (imu.gyroscope?.z_rps || 0) * (180 / Math.PI);
   const alpha = 0.98;
 
   if (orientationState.calibrated) {
+    // Pitch (Y-axis tilt): Corrected by Z-accel
     orientationState.pitch = alpha * (orientationState.pitch + gyroY * dt) + (1 - alpha) * (accelPitch - orientationState.pitchOffset);
-    orientationState.roll  = alpha * (orientationState.roll  + gyroX * dt) + (1 - alpha) * (accelRoll  - orientationState.rollOffset);
-    orientationState.yaw   = orientationState.yaw + (gyroZ * dt);
+    // Yaw (Z-axis tilt): Corrected by Y-accel
+    orientationState.yaw   = alpha * (orientationState.yaw   + gyroZ * dt) + (1 - alpha) * (accelYaw   - orientationState.yawOffset);
+    // Roll (X-axis spin): Pure Gyro Integration. Accel cannot track this in vertical state.
+    orientationState.roll  = orientationState.roll + (gyroX * dt);
   }
 
   return {
@@ -238,6 +251,6 @@ export function resetOrientation() {
     orientationState.roll  = 0;
     orientationState.yaw   = 0;
     orientationState.pitchOffset = 0;
-    orientationState.rollOffset  = 0;
+    orientationState.yawOffset   = 0;
     orientationState.calibrated = false;
 }

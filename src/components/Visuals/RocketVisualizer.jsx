@@ -79,11 +79,16 @@ function RealisticRocket({ pitch, roll, yaw }) {
     // useFrame mutates the ref directly — zero React re-render cost at 60fps
     useFrame((state, delta) => {
         if (groupRef.current) {
-            // Apply Linear Interpolation (LERP) to gracefully glide between network batched frames.
-            // This totally hides any 3 Hz Firebase stuttering, making it look incredibly smooth!
+            // Set strict Aerospace Tait-Bryan Euler sequence
+            groupRef.current.rotation.order = 'ZYX';
+            
+            // Three.js Coordinate Systems map differently from Physics:
+            // Vertical Spin (Roll) is rotation around Three.js Y-axis!
+            // Sideways Tilt (Yaw) is rotation around Three.js Z-axis!
+            // Forward Tilt (Pitch) is rotation around Three.js X-axis!
             groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, pitch, delta * 12.0);
-            groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, yaw, delta * 12.0);
-            groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, roll, delta * 12.0);
+            groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, roll, delta * 12.0); 
+            groupRef.current.rotation.z = THREE.MathUtils.lerp(groupRef.current.rotation.z, yaw, delta * 12.0);
         }
     });
 
