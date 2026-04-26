@@ -237,7 +237,8 @@ export const RawLog = ({ data }) => {
 
         // Extras
         const thermo = data?.structure?.thermocouple_c?.toFixed(1) ?? '---';
-        const strain = data?.structure?.strain_microstrain?.toFixed(4) ?? '---';
+        const strain1 = data?.structure?.strain_microstrain1?.toFixed(4) ?? '---';
+        const strain2 = data?.structure?.strain_microstrain2?.toFixed(4) ?? '---';
         const rssi   = data?.radio?.rssi_dbm?.toFixed(1) ?? '---';
         const snr    = data?.radio?.snr_db?.toFixed(1)   ?? '---';
         const pkt    = data?.packet?.count ?? 0;
@@ -248,7 +249,7 @@ export const RawLog = ({ data }) => {
             `| IMU P:${pitch} R:${roll} Y:${yaw}`,
             `| Accel X:${ax} Y:${ay} Z:${az} m/s²`,
             `| BARO:${bmpAlt}m ${bmpTemp}°C ${bmpPres}hPa`,
-            `| THR:${thermo}°C STR:${strain}`,
+            `| THR:${thermo}°C STR1:${strain1} STR2:${strain2}`,
             `| RF:${rssi}dBm SNR:${snr}dB`,
             `| #${pkt}`,
         ].join(' ');

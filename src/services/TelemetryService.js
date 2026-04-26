@@ -149,7 +149,8 @@ class TelemetryService {
               },
               structure: {
                   thermocouple_c: pkt.thermo || 0,
-                  strain_microstrain: pkt.strain || 0
+                  strain_microstrain1: pkt.strain1 || 0,
+                  strain_microstrain2: pkt.strain2 || 0
               },
               radio: {
                   rssi_dbm: pkt.rssi || 0,

@@ -29,6 +29,7 @@ const getMockTelemetryData = () => ({
     orientation: { roll: 0, pitch: 0, yaw: 0 },
     velocity: { vertical: 0, horizontal: 0 },
     battery: { voltage: 0, percentage: 0 },
+    structure: { thermocouple_c: 0, strain_microstrain1: 0, strain_microstrain2: 0 },
     status: "WAITING"
 });
 
