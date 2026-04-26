@@ -67,8 +67,8 @@ function calculateOrientation(imu, timestamp) {
 
   if (orientationState.calibrated) {
     orientationState.pitch = alpha * (orientationState.pitch + gyroY * dt) + (1 - alpha) * (accelPitch - orientationState.pitchOffset);
-    orientationState.roll  = alpha * (orientationState.roll  + gyroZ * dt) + (1 - alpha) * (accelRoll  - orientationState.rollOffset);
-    orientationState.yaw   = orientationState.yaw + (gyroX * dt);
+    orientationState.roll  = alpha * (orientationState.roll  + gyroX * dt) + (1 - alpha) * (accelRoll  - orientationState.rollOffset);
+    orientationState.yaw   = orientationState.yaw + (gyroZ * dt);
   }
 
   return {
