@@ -6,6 +6,7 @@ const TelemetryContext = createContext();
 const HISTORY_SIZE = 5000; // expanded buffer to store entire flight history instead of dropping it
 
 const getMockTelemetryData = () => ({
+    isMock: true,
     mission: "EKLAVYA-DEMO",
     timestamp_ms: 0,
     packet: { count: 0 },
@@ -56,7 +57,7 @@ export const TelemetryProvider = ({ children }) => {
         // subscriber list and the packet is silently lost.
         const unsubscribe = telemetryService.subscribe((data) => {
             // Drop the mock packet instantly upon receiving real payload
-            if (historyRef.current.length === 1 && historyRef.current[0].mission === "EKLAVYA-DEMO") {
+            if (historyRef.current.length === 1 && historyRef.current[0].isMock) {
                 historyRef.current = [];
             }
             // 1. Push to circular buffer
@@ -68,11 +69,9 @@ export const TelemetryProvider = ({ children }) => {
             // 2. State update — triggers one re-render per packet
             setLiveState({ packet: data, isConnected: true });
 
-            // 3. Throttle graph re-renders to every 5th packet (~1 Hz at 1 pkt/s)
+            // 3. Trigger graph re-render immediately for ESP32 streams (typically 1-2 Hz)
             packetCounterRef.current += 1;
-            if (packetCounterRef.current % 5 === 0) {
-                setHistoryVersion(v => v + 1);
-            }
+            setHistoryVersion(v => v + 1);
         });
 
         // Connect AFTER subscriber is registered
