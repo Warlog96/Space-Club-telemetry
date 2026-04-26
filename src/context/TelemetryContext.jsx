@@ -12,14 +12,14 @@ const getMockTelemetryData = () => ({
     gps: {
         latitude: 28.6139,
         longitude: 77.2090,
-        altitude_m: 250,
+        altitude_m: 0,
         satellites: 0,
         fix: false
     },
     bmp280: {
         temperature_c: 25.0,
         pressure_pa: 101325,
-        altitude_m: 250
+        altitude_m: 0
     },
     mpu6050: {
         accel_x: 0, accel_y: 0, accel_z: 9.8,

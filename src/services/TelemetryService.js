@@ -23,9 +23,13 @@ const orientationState = {
 function calculateOrientation(imu, timestamp) {
   if (!imu || !imu.acceleration) return { roll: 0, pitch: 0, yaw: 0 };
 
-  const dt = orientationState.lastTimestamp
-    ? Math.min((timestamp - orientationState.lastTimestamp) / 1000, 0.5) // cap at 0.5s
-    : 0.1;
+  let dt = 0.1;
+  if (orientationState.lastTimestamp && timestamp > orientationState.lastTimestamp) {
+    dt = Math.min((timestamp - orientationState.lastTimestamp) / 1000, 0.5); // cap at 0.5s
+  } else if (timestamp < orientationState.lastTimestamp) {
+    // Time went backwards (ESP32 reboot or shifted from Fake Data) -> reset calibration
+    orientationState.calibrated = false;
+  }
   orientationState.lastTimestamp = timestamp;
 
   const ax = imu.acceleration.x_mps2 || 0;
@@ -35,7 +39,9 @@ function calculateOrientation(imu, timestamp) {
   const accelPitch = Math.atan2(az, -ax) * (180 / Math.PI);
   const accelRoll  = Math.atan2(ay, -ax) * (180 / Math.PI);
 
-  if (!orientationState.calibrated && Math.abs(ax) > 8) {
+  const accelMag = Math.sqrt(ax * ax + ay * ay + az * az);
+
+  if (!orientationState.calibrated && accelMag > 8) {
     orientationState.pitchOffset = accelPitch;
     orientationState.rollOffset  = accelRoll;
     orientationState.pitch = 0;

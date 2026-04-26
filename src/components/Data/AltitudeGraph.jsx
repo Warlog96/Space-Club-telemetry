@@ -154,7 +154,7 @@ const AltitudeGraph = ({ history }) => {
                                 label={{ value: 'Time (s)', position: 'insideBottom', offset: -5, fill: '#c0c0c0', fontSize: 10 }}
                             />
                             <YAxis
-                                domain={[minAlt - yPad, maxAlt + yPad]}
+                                domain={[0, Math.max(maxAlt + yPad, 10)]}
                                 tickFormatter={v => `${v.toFixed(0)}`}
                                 stroke="#808080"
                                 tick={{ fill: '#c0c0c0', fontSize: 10, fontFamily: 'var(--font-main)' }}
