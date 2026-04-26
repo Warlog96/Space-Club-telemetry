@@ -277,7 +277,7 @@ export const RawLog = ({ data }) => {
 
             {/* Log content */}
             <div ref={logContainerRef} className="classic-inset" style={{
-                flex: 1, overflowY: 'auto', overflowX: 'hidden',
+                flex: 1, overflowY: 'auto', overflowX: 'auto',
                 padding: '4px',
                 fontFamily: 'var(--font-mono)',
                 lineHeight: '1.2',
