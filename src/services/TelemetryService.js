@@ -10,7 +10,7 @@
  */
 
 import { db } from './firebaseConfig';
-import { ref, query, limitToLast, onValue } from 'firebase/database';
+import { ref, query, limitToLast, onChildAdded, off } from 'firebase/database';
 
 // ── Orientation filter (complementary filter, mirrors ESP32 logic) ────────────
 const orientationState = {
@@ -102,32 +102,28 @@ class TelemetryService {
 
     console.log('[TelemetryService] Connecting to Firebase...');
 
-    const latestQuery = query(ref(db, 'telemetry'), limitToLast(1));
+    const latestQuery = query(ref(db, 'telemetry'), limitToLast(500));
 
-    // onValue fires immediately with the current latest record,
-    // then fires again every time a NEW record becomes the latest.
-    // No timestamp comparison needed — Firebase handles ordering by key.
-    this._unsub = onValue(latestQuery, (snapshot) => {
-      snapshot.forEach(child => {
-        const key = child.key;
-        const pkt = child.val();
+    // onChildAdded fires for all existing records (up to 500) upon load,
+    // and then sequentially for every new record without fetching the entire block again.
+    const unsubscribeFirebase = onChildAdded(latestQuery, (childSnapshot) => {
+      const key = childSnapshot.key;
+      const pkt = childSnapshot.val();
 
-        // Skip if Firebase fires with the same key we already processed
-        if (key === this._lastKey) return;
-        this._lastKey = key;
+      // Skip if Firebase fires with the same key we already processed
+      if (key === this._lastKey) return;
+      this._lastKey = key;
 
-        if (!pkt?.timestamp_ms) return;
+      if (!pkt?.timestamp_ms) return;
 
-        const enriched = enrichPacket({ ...pkt });
-        if (enriched) {
-          this.isConnected = true;
-          this.emit(enriched);
-          console.log(`[TelemetryService] Packet received — key: ${key} ts: ${pkt.timestamp_ms}`);
-        }
-      });
-
-      this.isConnected = true;
+      const enriched = enrichPacket({ ...pkt });
+      if (enriched) {
+        this.isConnected = true;
+        this.emit(enriched);
+      }
     });
+    
+    this._unsub = () => off(ref(db, 'telemetry'), 'child_added', unsubscribeFirebase);
   }
 
   disconnect() {

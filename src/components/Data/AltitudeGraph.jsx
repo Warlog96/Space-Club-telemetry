@@ -52,12 +52,26 @@ const AltitudeGraph = ({ history }) => {
 
     const chartData = useMemo(() => {
         if (!history || history.length === 0) return [];
-        const t0 = history[0]?.timestamp_ms ?? 0;
-        return history.map((d, i) => ({
-            t: t0 ? +((((d.timestamp_ms ?? 0) - t0) / 1000).toFixed(1)) : i,
-            gps: d?.gps?.altitude_m ?? null,
-            baro: d?.bmp280?.altitude_m ?? null,
-        })).filter(d => d.gps !== null || d.baro !== null);
+        
+        let currentT = 0;
+        let lastRealTime = history[0]?.timestamp_ms ?? 0;
+        
+        return history.map((d, i) => {
+            const ts = d?.timestamp_ms ?? 0;
+            if (i > 0) {
+                if (ts >= lastRealTime) {
+                    currentT += (ts - lastRealTime) / 1000;
+                } else {
+                    currentT += 2.0; // Reboot / backward jump -> strictly push timeline forward
+                }
+            }
+            lastRealTime = ts;
+            return {
+                t: +(currentT.toFixed(1)),
+                gps: d?.gps?.altitude_m ?? null,
+                baro: d?.bmp280?.altitude_m ?? null,
+            };
+        }).filter(d => d.gps !== null || d.baro !== null);
     }, [historyVersion]);
 
     const { maxAlt, minAlt, avgAlt } = useMemo(() => {

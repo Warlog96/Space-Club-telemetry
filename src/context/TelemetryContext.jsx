@@ -7,7 +7,7 @@ const HISTORY_SIZE = 500; // larger buffer, zero cost since it's a Ref
 
 const getMockTelemetryData = () => ({
     mission: "EKLAVYA-DEMO",
-    timestamp_ms: Date.now(),
+    timestamp_ms: 0,
     packet: { count: 0 },
     gps: {
         latitude: 28.6139,
@@ -55,6 +55,10 @@ export const TelemetryProvider = ({ children }) => {
         // If connect() runs before subscribe(), that first emit() hits an empty
         // subscriber list and the packet is silently lost.
         const unsubscribe = telemetryService.subscribe((data) => {
+            // Drop the mock packet instantly upon receiving real payload
+            if (historyRef.current.length === 1 && historyRef.current[0].mission === "EKLAVYA-DEMO") {
+                historyRef.current = [];
+            }
             // 1. Push to circular buffer
             historyRef.current.push(data);
             if (historyRef.current.length > HISTORY_SIZE) {
