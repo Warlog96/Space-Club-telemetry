@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
     ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import { useTelemetry } from '../../context/TelemetryContext';
@@ -142,24 +142,11 @@ const AltitudeGraph = ({ history }) => {
                     </div>
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 5 }}>
-                            <defs>
-                                <linearGradient id="altGpsGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#00ff00" stopOpacity={0.25} />
-                                    <stop offset="100%" stopColor="#00ff00" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="altBaroGrad" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="0%" stopColor="#ff9900" stopOpacity={0.25} />
-                                    <stop offset="100%" stopColor="#ff9900" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-
+                        <LineChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 5 }}>
                             <CartesianGrid stroke="#404040" strokeDasharray="3 3" vertical={false} />
 
                             <XAxis
                                 dataKey="t"
-                                type="number"
-                                domain={[0, 'dataMax']}
                                 tickFormatter={v => `${v}s`}
                                 stroke="#808080"
                                 tick={{ fill: '#c0c0c0', fontSize: 10, fontFamily: 'var(--font-main)' }}
@@ -168,7 +155,7 @@ const AltitudeGraph = ({ history }) => {
                                 label={{ value: 'Time (s)', position: 'insideBottom', offset: -5, fill: '#c0c0c0', fontSize: 10 }}
                             />
                             <YAxis
-                                domain={[0, Math.max(maxAlt + yPad, 10)]}
+                                domain={['auto', 'auto']}
                                 tickFormatter={v => `${v.toFixed(0)}`}
                                 stroke="#808080"
                                 tick={{ fill: '#c0c0c0', fontSize: 10, fontFamily: 'var(--font-main)' }}
@@ -190,25 +177,23 @@ const AltitudeGraph = ({ history }) => {
                                 label={{ value: 'Peak', position: 'insideTopLeft', fill: '#ffffff', fontSize: 9 }}
                             />
 
-                            <Area
+                            <Line
                                 type="monotone" dataKey="gps" name="GPS ALT"
                                 stroke="#00ff00" strokeWidth={1.5}
-                                fill="url(#altGpsGrad)"
                                 dot={false}
                                 isAnimationActive={false}
                                 activeDot={{ r: 3, fill: '#00ff00', stroke: '#ffffff', strokeWidth: 1 }}
                                 connectNulls={false}
                             />
-                            <Area
+                            <Line
                                 type="monotone" dataKey="baro" name="BARO ALT"
                                 stroke="#ff9900" strokeWidth={1.5}
-                                fill="url(#altBaroGrad)"
                                 dot={false}
                                 isAnimationActive={false}
                                 activeDot={{ r: 3, fill: '#ff9900', stroke: '#ffffff', strokeWidth: 1 }}
                                 connectNulls={false}
                             />
-                        </AreaChart>
+                        </LineChart>
                     </ResponsiveContainer>
                 )}
             </div>
