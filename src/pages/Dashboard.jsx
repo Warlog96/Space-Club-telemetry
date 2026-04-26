@@ -7,6 +7,7 @@ import MenuBar from '../components/Navigation/MenuBar';
 import GraphView from '../components/Graphs/GraphView';
 import ModuleDataView from '../components/Modules/ModuleDataView';
 import { SystemStatus, MissionClock, MaxAltitude, RawLog } from '../components/Data/DashboardPanels';
+import { resetOrientation } from '../services/TelemetryService';
 
 // ─── Classic Data Badge ───────────────────────────────────────────────────────
 const TeleBadge = ({ label, value, unit, accent = '#00ff00', warn = false }) => (
@@ -188,6 +189,12 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                             <TeleBadge label="PITCH" value={pitch} unit="°" />
                             <TeleBadge label="ROLL" value={roll} unit="°" />
                             <TeleBadge label="YAW" value={yaw} unit="°" />
+                            <button 
+                                onClick={() => resetOrientation()} 
+                                style={{ marginLeft: 'auto', alignSelf: 'center', height: '24px', marginRight: '4px' }}
+                            >
+                                RESET IMU
+                            </button>
                         </div>
                         <div className="classic-inset" style={{ flex: 1, position: 'relative' }}>
                             <RocketVisualizer data={packet} />

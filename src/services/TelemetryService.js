@@ -205,3 +205,13 @@ class TelemetryService {
 }
 
 export const telemetryService = new TelemetryService();
+
+// Force physical MPU re-calibration on demand
+export function resetOrientation() {
+    orientationState.pitch = 0;
+    orientationState.roll  = 0;
+    orientationState.yaw   = 0;
+    orientationState.pitchOffset = 0;
+    orientationState.rollOffset  = 0;
+    orientationState.calibrated = false;
+}
