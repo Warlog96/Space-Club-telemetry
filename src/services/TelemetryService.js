@@ -10,7 +10,17 @@
  */
 
 import { db } from './firebaseConfig';
-import { ref, query, limitToLast, onChildAdded, off } from 'firebase/database';
+import { ref, query, limitToLast, onChildAdded } from 'firebase/database';
+
+const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+function pushIdToTimestamp(id) {
+  if (!id || id.length < 8) return Date.now();
+  let time = 0;
+  for (let i = 0; i < 8; i++) {
+    time = time * 64 + PUSH_CHARS.indexOf(id.charAt(i));
+  }
+  return time;
+}
 
 // ── Orientation filter (complementary filter, mirrors ESP32 logic) ────────────
 const orientationState = {
@@ -104,17 +114,54 @@ class TelemetryService {
 
     const latestQuery = query(ref(db, 'telemetry'), limitToLast(5000));
 
-    // onChildAdded fires for all existing records (up to 500) upon load,
-    // and then sequentially for every new record without fetching the entire block again.
-    const unsubscribeFirebase = onChildAdded(latestQuery, (childSnapshot) => {
+    this._unsub = onChildAdded(latestQuery, (childSnapshot) => {
       const key = childSnapshot.key;
-      const pkt = childSnapshot.val();
+      let pkt = childSnapshot.val();
 
       // Skip if Firebase fires with the same key we already processed
       if (key === this._lastKey) return;
       this._lastKey = key;
 
-      if (!pkt?.timestamp_ms) return;
+      // Handle flat JSON format gracefully (if an alternate ESP32 script is flashed)
+      if (pkt && pkt.packet !== undefined && pkt.ax !== undefined && !pkt.timestamp_ms) {
+          pkt = {
+              version: "1.0",
+              mission: "FLAT_PAYLOAD_FALLBACK",
+              timestamp_ms: pushIdToTimestamp(key), // Convert Firebase Push Key directly to absolute Epoch time
+              packet: { count: pkt.packet, phase: "FLIGHT" },
+              gps: {
+                  latitude: pkt.lat || 0,
+                  longitude: pkt.lng || 0,
+                  altitude_m: 0,
+                  valid: (pkt.lat !== 0),
+                  satellites: 0
+              },
+              imu: {
+                  acceleration: { x_mps2: pkt.ax, y_mps2: pkt.ay, z_mps2: pkt.az },
+                  gyroscope: { x_rps: pkt.gx, y_rps: pkt.gy, z_rps: pkt.gz },
+                  calibrated: true
+              },
+              bmp280: {
+                  temperature_c: pkt.temp || 0,
+                  pressure_hpa: pkt.pressure || 0,
+                  altitude_m: pkt.bmpAlt || 0,
+                  calibrated: true
+              },
+              structure: {
+                  thermocouple_c: pkt.thermo || 0,
+                  strain_microstrain: pkt.strain || 0
+              },
+              radio: {
+                  rssi_dbm: pkt.rssi || 0,
+                  snr_db: pkt.snr || 0
+              }
+          };
+      }
+
+      if (!pkt?.timestamp_ms) {
+          // If flat packets are detected missing timestamp, skip cleanly
+          return;
+      }
 
       const enriched = enrichPacket({ ...pkt });
       if (enriched) {
@@ -122,8 +169,6 @@ class TelemetryService {
         this.emit(enriched);
       }
     });
-    
-    this._unsub = () => off(ref(db, 'telemetry'), 'child_added', unsubscribeFirebase);
   }
 
   disconnect() {
