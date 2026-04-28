@@ -135,7 +135,7 @@ const AltitudeGraph = ({ history }) => {
             </div>
 
             {/* Chart */}
-            <div className="classic-inset" style={{ flex: 1, padding: '4px', margin: '2px', background: '#000000' }}>
+            <div className="classic-inset" style={{ flex: 1, minHeight: 0, minWidth: 0, padding: '4px', margin: '2px', background: '#000000' }}>
                 {!hasData ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                         <span style={{ color: '#00ff00' }}>Awaiting Telemetry Data...</span>

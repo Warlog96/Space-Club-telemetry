@@ -34,7 +34,8 @@ const MenuBar = ({ isOpen, onToggle, onClose, onMenuSelect }) => {
             items: [
                 { id: 'gps-module', label: 'GPS Module Data' },
                 { id: 'mpu-module', label: 'MPU Module Data' },
-                { id: 'bmp-module', label: 'BMP Module Data' }
+                { id: 'bmp-module', label: 'BMP Module Data' },
+                { id: 'payload-module', label: 'Payload Module Data' }
             ]
         }
     };

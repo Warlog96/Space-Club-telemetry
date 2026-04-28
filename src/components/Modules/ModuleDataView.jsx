@@ -36,6 +36,15 @@ const ModuleDataView = ({ moduleId, history, currentData }) => {
                     { label: 'Altitude', key: 'bmp280.altitude_m', unit: 'm', decimals: 2 },
                     { label: 'Temperature', key: 'bmp280.temperature_c', unit: '°C', decimals: 2 }
                 ]
+            },
+            'payload-module': {
+                title: 'PAYLOAD MODULE DATA',
+                icon: '📦',
+                fields: [
+                    { label: 'Strain Node 1', key: 'structure.strain_microstrain1', unit: 'μɛ', decimals: 4 },
+                    { label: 'Strain Node 2', key: 'structure.strain_microstrain2', unit: 'μɛ', decimals: 4 },
+                    { label: 'Thermocouple Temp', key: 'structure.thermocouple_c', unit: '°C', decimals: 2 }
+                ]
             }
         };
         return configs[id] || configs['gps-module'];

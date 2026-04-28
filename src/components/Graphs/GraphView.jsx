@@ -131,7 +131,7 @@ function TimeChart({ graphId, data, cfg, colors }) {
                 </div>
             </div>
 
-            <div className="classic-inset graph-chart-area" style={{ background: '#000000', margin: '2px', padding: '4px' }}>
+            <div className="classic-inset graph-chart-area" style={{ flex: 1, minHeight: 0, minWidth: 0, background: '#000000', margin: '2px', padding: '4px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data} margin={{ top: 10, right: 16, left: 4, bottom: 4 }}>
                         <defs>
@@ -242,7 +242,7 @@ function XYChart({ graphId, data, cfg, colors }) {
                 </div>
             </div>
 
-            <div className="classic-inset graph-chart-area" style={{ background: '#000000', margin: '2px', padding: '4px' }}>
+            <div className="classic-inset graph-chart-area" style={{ flex: 1, minHeight: 0, minWidth: 0, background: '#000000', margin: '2px', padding: '4px' }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <ScatterChart margin={{ top: 10, right: 16, left: 4, bottom: 4 }}>
                         <defs>

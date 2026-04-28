@@ -306,7 +306,7 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                     {/* Altitude vs Time Graph */}
                     <div className="classic-outset dashboard-item-chart">
                         <SectionLabel title="Chart" sub="Alt" />
-                        <div className="classic-inset" style={{ flex: 1 }}>
+                        <div className="classic-inset" style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
                             <AltitudeGraph history={history} />
                         </div>
                     </div>
@@ -314,8 +314,8 @@ const Dashboard = ({ pilot, username, onLogout, isPublicView = false, commanderN
                     {/* Serial / Raw Log */}
                     <div className="classic-outset dashboard-item-serial">
                         <SectionLabel title="Serial Console" />
-                        <div className="classic-inset" style={{ flex: 1 }}>
-                            <RawLog data={packet} />
+                        <div className="classic-inset" style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
+                            <RawLog data={packet} history={history} />
                         </div>
                     </div>
 

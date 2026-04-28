@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 // ─── Shared bar for panel headers ─────────────────────────────────────────────
-const PanelHeader = ({ title, sub }) => (
+const PanelHeader = ({ title, sub, children }) => (
     <div className="panel-title-bar">
         <span>{title}</span>
         {sub && <span style={{ fontWeight: 'normal', marginLeft: 'auto' }}>[{sub}]</span>}
+        {children}
     </div>
 );
 
@@ -203,7 +204,7 @@ export const GPSInfo = ({ gps }) => (
 );
 
 // ─── 5. Raw Serial Log ────────────────────────────────────────────────────────
-export const RawLog = ({ data }) => {
+export const RawLog = ({ data, history }) => {
     const logContainerRef = useRef(null);
     const [logLines, setLogLines] = useState([]);
     const prevPacketCount = useRef(0);
@@ -275,6 +276,61 @@ export const RawLog = ({ data }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'auto', block: 'nearest' });
     }, [logLines]);
 
+    const downloadCsv = () => {
+        if (!history || history.length === 0) return alert('No telemetry data to download.');
+        
+        const headers = [
+            'System_ms', 'Time_s', 'Packet_Count',
+            'GPS_Lat', 'GPS_Lon', 'GPS_Alt_m', 'GPS_Satellites',
+            'Pitch_deg', 'Roll_deg', 'Yaw_deg',
+            'Accel_X', 'Accel_Y', 'Accel_Z',
+            'Gyro_X', 'Gyro_Y', 'Gyro_Z',
+            'Baro_Alt_m', 'Baro_Temp_c', 'Baro_Pressure_hpa',
+            'Thermo_Temp_c', 'Strain_Micro_1', 'Strain_Micro_2',
+            'RSSI_dbm', 'SNR_db'
+        ];
+
+        const startMs = history[0].timestamp_ms || 0;
+
+        const rows = history.map(d => {
+            const timeS = ((d.timestamp_ms || 0) - startMs) / 1000;
+            return [
+                d.timestamp_ms ?? '',
+                timeS.toFixed(3),
+                d.packet?.count ?? '',
+                d.gps?.latitude?.toFixed(6) ?? '',
+                d.gps?.longitude?.toFixed(6) ?? '',
+                d.gps?.altitude_m?.toFixed(2) ?? '',
+                d.gps?.satellites ?? '',
+                d.imu?.pitch?.toFixed(2) ?? '',
+                d.imu?.roll?.toFixed(2) ?? '',
+                d.imu?.yaw?.toFixed(2) ?? '',
+                d.imu?.acceleration?.x_mps2?.toFixed(2) ?? '',
+                d.imu?.acceleration?.y_mps2?.toFixed(2) ?? '',
+                d.imu?.acceleration?.z_mps2?.toFixed(2) ?? '',
+                d.imu?.gyroscope?.x_rps?.toFixed(2) ?? '',
+                d.imu?.gyroscope?.y_rps?.toFixed(2) ?? '',
+                d.imu?.gyroscope?.z_rps?.toFixed(2) ?? '',
+                d.bmp280?.altitude_m?.toFixed(2) ?? '',
+                d.bmp280?.temperature_c?.toFixed(2) ?? '',
+                (d.bmp280?.pressure_hpa || (d.bmp280?.pressure_pa ? d.bmp280.pressure_pa/100 : '')),
+                d.structure?.thermocouple_c?.toFixed(2) ?? '',
+                d.structure?.strain_microstrain1?.toFixed(4) ?? '',
+                d.structure?.strain_microstrain2?.toFixed(4) ?? '',
+                d.radio?.rssi_dbm ?? '',
+                d.radio?.snr_db ?? ''
+            ];
+        });
+
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `telemetry_log_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div style={{
             height: '100%', display: 'flex', flexDirection: 'column',
@@ -282,7 +338,14 @@ export const RawLog = ({ data }) => {
             overflow: 'hidden'
         }}>
             {/* Header */}
-            <PanelHeader title="TELEMETRY DATA LOG" sub="COM1" />
+            <PanelHeader title="TELEMETRY DATA LOG" sub="COM1">
+                <button 
+                    onClick={downloadCsv} 
+                    style={{ marginLeft: '4px', height: '14px', lineHeight: '10px', padding: '0 4px', fontSize: '9px' }}
+                >
+                    CSV
+                </button>
+            </PanelHeader>
 
             {/* Log content */}
             <div ref={logContainerRef} className="classic-inset" style={{
